@@ -1,0 +1,32 @@
+Best format for all: 32-bit, non-interlaced, PNG, no transparency
+
+Box Art: 
+*Game Icon (Mastery Badge): 96x96 (should also work at 64x, 48x, and 32x)
+*Title Screen
+*In-Game Screenshot
+Achievement Badges: 64x64 (should also work at 48x and 32x)
+	Clear all Acts
+	All rings Z1
+	All rings Z2
+	*All rings Z3
+	All rings, all Acts
+	Speedrun 1-1
+	Speedrun 1-2
+	Speedrun 2-1
+	Speedrun 2-2
+	Speedrun 3-1
+	Speedrun 3-2
+	Repeat text
+	*Statue
+	Credits
+
+
+The New Adventures of Sonic the Hedgehog (SAGE 2024 Demo).gb
+name: NEWADVENTURESOF
+cart type: MBC5
+ROM size: 524288 bytes
+RAM size: 32768 bytes
+battery: Yes
+GBC exclusive
+SGB support
+MD5: ebb4915a6897804a2cbf72cd7f60d4f5

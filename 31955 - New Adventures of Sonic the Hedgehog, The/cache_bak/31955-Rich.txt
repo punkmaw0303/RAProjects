@@ -1,0 +1,39 @@
+Lookup:Act
+4=is viewing the credits.
+5,12,14-15=has cleared a Zone!
+6=Peridot Coast, Act 1
+7=Peridot Coast, Act 2
+8=Marble Valley, Act 1
+9=Marble Valley, Act 2
+10=Robotropolis, Act 1
+11=Robotropolis, Act 2
+13=is on the splash screen.
+16=is on the title screen.
+
+Lookup:Action
+0,2=🦘
+1,3=🧍
+5,7=🏃
+
+Lookup:Screen
+4=is viewing the credits.
+5,12,14-15=has cleared a Zone!
+6=Peridot Coast, Act 1
+7=Peridot Coast, Act 2
+8=Marble Valley, Act 1
+9=Marble Valley, Act 2
+10=Robotropolis, Act 1
+11=Robotropolis, Act 2
+13=is on the splash screen.
+16=is on the title screen.
+
+Lookup:Symbol
+4=⏿
+5,12,14-15=🏁
+*=
+
+Display:
+?0xHc58f>=6_0xHc58f<=11?@Action(0xHc0c9) Sonic is in @Act(0xHc58f).
+?0xHc58f=16_0xHc838=1?🖙 Sonic is selecting a zone…
+?1=1S0xHc58f=12S0xHc58f=5S0xHc58f=14S0xHc58f=15S0xHc58f=16S0xHc58f=4?@Symbol(0xHc58f) Sonic @Screen(0xHc58f)
+⌛ Sonic is booting up the game…
