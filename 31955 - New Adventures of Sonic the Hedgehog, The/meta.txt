@@ -1,0 +1,19 @@
+Game: https://retroachievements.org/game/31955
+
+Developer: Oasys
+Publisher: Oasys
+Genre: 2D Platforming
+Released: August 13, 2024
+
+Hubs:
+[Perspective - Side View](https://retroachievements.org/hub/5938)
+[Subgenre - 2D Platforming](https://retroachievements.org/hub/8837)
+[Homebrew - Made with GB Studio](https://retroachievements.org/hub/3554)
+[Protagonist - Cartoon Animal](https://retroachievements.org/hub/7130)
+[Misc. - Freely Available in Forum Topic](https://retroachievements.org/hub/22750)
+(The game is freely available on both [itch.io](https://oasys.itch.io/new-adventures-of-sonic-the-hedgehog-sage-24-demo) and [SFGHQ](https://sonicfangameshq.com/forums/showcase/the-new-adventures-of-sonic-the-hedgehog-sage-2024-demo.2251/).)
+
+Icon: TBD
+Box Art: https://sonicfangameshq.com/forums/showcase/the-new-adventures-of-sonic-the-hedgehog-sage-2024-demo.2251/cover-image
+Title Screen: https://raw.githubusercontent.com/punkmaw0303/RAProjects/refs/heads/main/31955%20-%20New%20Adventures%20of%20Sonic%20the%20Hedgehog%2C%20The/game_img/title_unscaled.png
+Screenshot: https://raw.githubusercontent.com/punkmaw0303/RAProjects/refs/heads/main/31955%20-%20New%20Adventures%20of%20Sonic%20the%20Hedgehog%2C%20The/game_img/screenshot.png
