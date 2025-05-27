@@ -111,9 +111,9 @@ function Player_Lookup(component, value)
             "runL"  : 7,
         },
         "control": {
-            "disabled": 0x01,
-            "enabled" : 0x03,
-            "unknown" : 0x17
+            "disabled"  : 0x01,
+            "enabled"   : 0x03,
+            "transition": 0x17
         }
     }
     return obj[component][value]
@@ -425,7 +425,7 @@ function Cheevo_NoFall()
     )
 }
 
-function Cheevo_WithinArea(aTitle, numPoints, desc, screenName, minX, maxX, minY, maxY)
+/*function Cheevo_WithinArea(aTitle, numPoints, desc, screenName, minX, maxX, minY, maxY)
 {
     s = Screen_Get()
     a = Screen_Lookup(screenName)
@@ -433,12 +433,31 @@ function Cheevo_WithinArea(aTitle, numPoints, desc, screenName, minX, maxX, minY
     y = Player_GetYPosition()
     
     reset = never(s != a)
-    goal = once(IsBetween(x, minX, maxX) && IsBetween(y, minY, maxY))
+    start = once(Screen_OnSwitch(-1, -1))
+    goal = IsBetween(x, minX, maxX) && IsBetween(y, minY, maxY)
     
     achievement(
         title = aTitle, points = numPoints,
         description = desc,
-        trigger = reset && goal
+        trigger = reset && start && goal
+    )
+}*/
+
+function Cheevo_EnteredArea(aTitle, numPoints, desc, screenName, minX, maxX, minY, maxY)
+{
+    s = Screen_Get()
+    a = Screen_Lookup(screenName)
+    x = Player_GetXPosition()
+    y = Player_GetYPosition()
+    
+    goal = s == a &&
+        (!IsBetween(prev(x), minX, maxX) || !IsBetween(prev(y), minY, maxY)) &&
+        IsBetween(x, minX, maxX) && IsBetween(y, minY, maxY)
+    
+    achievement(
+        title = aTitle, points = numPoints,
+        description = desc,
+        trigger = goal
     )
 }
 
@@ -473,16 +492,17 @@ function Cheevo_HoldRight(aTitle, screenName, actNum)
     )
 }
 
-function Cheevo_Credits()
+/*function Cheevo_Credits()
 {
-    s = Screen_Get()
+    t = Screen_Lookup("title")
+    c = Screen_Lookup("credits")
     
     achievement(
         title = "Credit to the Creators", points = 0,
         description = "View the credits.",
-        trigger = Screen_OnSwitch(prev(s), s) && s == Screen_Lookup("credits")
+        trigger = Screen_OnSwitch(t, c)
     )
-}
+}*/
 
 // Contains logic shared by both achievement and leaderboard speedruns.
 function Speedrun_SharedLogic(screen, actNum)
@@ -522,7 +542,7 @@ Cheevo_RepeatIntro()
 
 Cheevo_NoFall()
 
-Cheevo_WithinArea(
+Cheevo_EnteredArea(
     "It's Green Hill, Not Blue Hill", 0,
     "Try (and fail) to land on the blue hill in Peridot Coast, Act 2.",
     "z1a2", 0x4C00, 0x4F00, 0x1B30, 0x1CB0
@@ -531,7 +551,7 @@ Cheevo_WithinArea(
 Cheevo_HoldRight("Hold Right to Win",           "z2a1", 1)
 Cheevo_HoldRight("Vaulting Through the Valley", "z2a2", 2)
 
-Cheevo_WithinArea(
+Cheevo_EnteredArea(
     "Welcome to Robotropolis!", 1,
     "Find the hidden statue in the background of Robotropolis, Act 2.",
     "z3a2", 0x7C00, 0x7E00, 0x1C40, 0x1E90
@@ -544,7 +564,7 @@ Cheevo_Speedrun("Marble Master",          "z2a2", 2,  876)  // 14.60 seconds
 Cheevo_Speedrun("Robo Ring Rush",         "z3a1", 1, 1194)  // 19.90 seconds
 Cheevo_Speedrun("Down to the Wire",       "z3a2", 2,  870)  // 14.50 seconds
 
-Cheevo_Credits()
+//Cheevo_Credits()
 
 
 //--- Leaderboards ---
@@ -557,9 +577,9 @@ function LB_Speedrun(screenName, actNum)
     cancel = s != Screen_Get()
     reset = never(cancel)
     
-    start = reset && once(Screen_OnSwitch(-1, s))
+    start = reset && once(Screen_OnSwitch(-1, s) && Player_GetControl() == Player_Lookup("control", "transition"))
     goal = reset && Screen_ActCleared(s, actNum) && Screen_RingTally(s)
-    value = reset && measured(repeated(0, c != prev(c)))
+    value = measured(repeated(0, c != prev(c)))
     
     leaderboard(
         "Ring Rush: " + name,
