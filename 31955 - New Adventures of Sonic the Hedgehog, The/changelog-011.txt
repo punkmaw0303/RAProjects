@@ -1,0 +1,11 @@
+"All Clear" is the only achievement that checks for screen switching instead of touching the goal post. Other achievements use triggers to display when they are active and require being able to reset them. Using the goal post as a goal condition for those makes resetting easier. Additionally, the code to check for this has been simplified and ________won't require re-timing time trial achievements______.
+
+* All Clear
+ - Never resets unless the emulator is reset
+ - Pauses when not in an Act or on the first clear screen
+ - Only checks for the screen switching from one specific screen to another specific screen (i.e.: Zone 1, Act 1 -> Zone 1, Act 2)
+* Achievements for collecting all the rings in a Zone no longer checks for the player going out of order (no current way for them to do so without cheating).
+* "Can You Repeat That?" has been completely reworked and no longer relies on ASCII text.
+* Achievements where the player needs to be within specific coordinates are generated the same by RATools. They will be altered manually to remove Alt Groups and add the logic back into the Core Group.
+* "Hold right"-based achievements now only check if velocity decreases or the player moves left.
+* Speedrun achievements were heavily simplified and only check if the player is on the right screen and they touch the goal within the time limit.
