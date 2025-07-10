@@ -3,16 +3,6 @@
 
 // prev = delta, prior = previous DIFFERENT value
 
-/*
-player_action
-player_control
-tbox_control
-tbox_ypos
-tbox_trigger
-screen
-ringcollect
-framecounter*/
-
 //--- RAM Getters ---
 // $c0ba: [16-bit] Player X-Position
 function get_player_xposition() => word(0xc0ba)
@@ -28,9 +18,16 @@ function get_player_yposition() => word(0xc0bc)
           0xffd6 - 0xffff = Moving left (lower numbers = faster) */
 function get_player_xvelocity() => word(0xda5a)
 
+/* $c0c9: [8-bit] Player Action State
+          The player's current action. */
 function get_player_action() => byte(0xc0c9)
 
+/* $c582: [8-bit] Player Control State
+          Determines whether or not the player has control over the character. */
 function get_player_control() => byte(0xc582)
+
+// $C838: [8-Bit] Text Box Control State
+function get_tbox_control() => byte(0xC838)
 
 /* $c984: [8-bit] Text Box Trigger Collision
           Tracks which text box trigger the player is colliding with, if any.
@@ -39,13 +36,17 @@ function get_player_control() => byte(0xc582)
           0xff = No collision detected or not in an Act. */
 function get_tbox_trigger_collision() => byte(0xc984)
 
+/* $c58f: [8-bit] Screen
+          The ID of the current screen. */
 function get_screen() => byte(0xc58f)
 
+/* $d984: [16-bit] Ring Collected
+          Value used to determine when a ring was collected.
+          DO NOT USE THIS VALUE DIRECTLY. USE THE HELPER FUNCTION INSTEAD. */
 function get_ring_collection_value() => word(0xd984)
 
-function get_frame_ticker() => word(0xc0a3)
-
 //--- Lookup Dictionaries ---
+// Number: Returns the ID for a given action state.
 lookup_player_action = {
     "stand_r": 1,
     "stand_l": 3,
@@ -55,6 +56,7 @@ lookup_player_action = {
     "run_l"  : 7
 }
 
+// String: Returns an emoji used in RP text based on an action's ID.
 lookup_player_action_symbol = {
     1: "🧍",
     3: "🧍",
@@ -64,12 +66,20 @@ lookup_player_action_symbol = {
     7: "🏃"
 }
 
+// Number: Returns the ID for various player control states.
 lookup_player_control = {
     "disabled"  : 0x01,
     "enabled"   : 0x03,
     "transition": 0x17
 }
 
+// Number: Return the value associated for when the text box is being controlled or not.
+lookup_tbox_control = {
+    "enabled" : 0x01,
+    "disabled": 0x19
+}
+
+// Number: Returns the ID of the specified text box collider or 0xff for "none".
 lookup_tbox_trigger = {
     "intro" : 0x00,
     "clear2": 0x00,
@@ -77,6 +87,7 @@ lookup_tbox_trigger = {
     "none"  : 0xff
 }
 
+// Number: Returns the ID number of a specified screen.
 lookup_screen = {
     "credits": 0x04,
     "clear2" : 0x05,
@@ -93,16 +104,18 @@ lookup_screen = {
     "title"  : 0x10,
 }
 
+// String: Returns an emoji used for RP text based on specific screen IDs.
 lookup_screen_symbol = {
-    0x0D: "",
-    0x10: "",
-    0x0C: "🏁",
+    0x04: "⏿",
     0x05: "🏁",
+    0x0C: "🏁",
+    0x0D: "",
     0x0E: "🏁",
     0x0F: "🏁",
-    0x04: "⏿"
+    0x10: ""
 }
 
+// String: Returns the RP text associated with the specified screen ID.
 lookup_screen_text = {
     lookup_screen["splash"] : "is on the splash screen.",
     lookup_screen["title"]  : "is on the title screen.",
@@ -117,24 +130,10 @@ lookup_screen_text = {
     lookup_screen["clear2"] : "has cleared a Zone!",
     lookup_screen["clear3"] : "has cleared a Zone!",
     lookup_screen["clear4"] : "has cleared a Zone!"
-    
-    /*0x04: "is viewing the credits.",
-    0x05: "has cleared a Zone!",
-    0x06: "Peridot Coast, Act 1",
-    0x07: "Peridot Coast, Act 2",
-    0x08: "Marble Valley, Act 1",
-    0x09: "Marble Valley, Act 2",
-    0x0a: "Robotropolis, Act 1",
-    0x0b: "Robotropolis, Act 2",
-    0x0c: "has cleared a Zone!",
-    0x0d: "is on the splash screen.",
-    0x0e: "has cleared a Zone!",
-    0x0f: "has cleared a Zone!",
-    0x10: "is on the title screen."*/
 }
 
 //--- Helper Functions ---
-// Bool
+// Bool: Returns whether or not the given value is between the two other arguments, inclusive.
 function is_between(value, min, max) => min <= value && value <= max
 
 // Logic: Returns logic for when the screen changes.
@@ -144,12 +143,14 @@ function screen_switch(from, to)
     return prev(screen) == from && screen == to
 }
 
+// Logic: Common logic for priming an achievement on screen switch.
 function primer()
 {
     screen = get_screen()
     return once(screen != prev(screen))
 }
 
+// Logic: Detects when the player first touches a goal post.
 function touched_goal(screen)
 {
     col = get_tbox_trigger_collision()
@@ -162,6 +163,7 @@ function touched_goal(screen)
     return col != prev(col) && col == id
 }
 
+// Logic: Detects when a player collects a ring.
 function ring_collected()
 {
     r = get_ring_collection_value()
@@ -169,6 +171,7 @@ function ring_collected()
     return c && r != prev(r)
 }
 
+// Logic: Tallies up the rings for a given Act.
 function tally_rings(screen) => repeated(8, get_screen() == screen && ring_collected())
 
 //--- Achievements ---
@@ -200,7 +203,7 @@ function cheevo_all_clear()
     
     achievement(
         title = "All Clear", points = 1, type = "win_condition",
-        description = "Reach every goal post, in a single emulator session.",
+        description = "Reach the goal post at the end of each Act.",
         trigger = pause && goal
     )
 }
@@ -218,8 +221,8 @@ function cheevo_zone_rings(ach_title, zone_name, act1_str)
     
     achievement(
         title = ach_title, points = 2,
-        description = "Collect all the rings across both Acts of "
-            + zone_name + " in a single run.",
+        description = "Collect all the rings across both Acts of " + zone_name +
+            " in a single run.",
         trigger = reset && goal
     )
 }
@@ -296,9 +299,15 @@ function cheevo_hold_right(ach_title, act_num)
     name = lookup_screen_text[act]
     velocity = get_player_xvelocity()
     
-    /* Reset if on the incorrect screen, velocity drops below its previous value,
-       or the player moves left (denoted by extremely high velocity values). */
-    reset = never(screen != act || velocity < prior(velocity) || velocity >= 0xee0000)
+    player_control = get_player_control()
+    control_renabled_protection = player_control != prev(player_control) &&
+        player_control == lookup_player_control["enabled"]
+    
+    /* Reset if on the incorrect screen or, AFTER the player has already regained control,
+       velocity drops below its previous value or the player moves left (denoted by
+       extremely high velocity values). */
+    reset = never(screen != act || ((velocity < prev(velocity) || velocity >= 0xee00)
+        && player_control == prev(player_control)))
     
     // Primes on screen switch.
     start = primer()
@@ -308,7 +317,7 @@ function cheevo_hold_right(ach_title, act_num)
     achievement(
         title = ach_title, points = 3,
         description = "Reach the goal post of Marble Valley, Act " + act_num +
-            " without pressing left, letting go of right, nor colliding with any walls.",
+            " without slowing down.",
         trigger = reset && start && goal
     )
 }
@@ -318,12 +327,12 @@ function cheevo_speedrun(ach_title, screen_str, frame_limit)
     screen = get_screen()
     act = lookup_screen[screen_str]
     name = lookup_screen_text[act]
-    
-    ticker = get_frame_ticker()
-    seconds = frame_limit / 60.00
+    seconds = (frame_limit / 60.00) + ""
+    if (length(seconds) == 4)
+        seconds = seconds + "0"
     
     // Increase the time limit by one frame so that tieing with the target time also counts.
-    time_limit = repeated(frame_limit + 1, ticker != prev(ticker))
+    time_limit = repeated(frame_limit + 1, always_true())
     reset = never(screen != act || time_limit)
     
     start = primer()
@@ -365,28 +374,70 @@ cheevo_entered_area(
 )
 
 cheevo_speedrun("Quick and Easy",         "z1a1", 1200) // 20.00 seconds
-cheevo_speedrun("Peridot Perfection",     "z1a2",  861) // 14.35 seconds
-cheevo_speedrun("Speedy Treasure Hunter", "z2a1",  915) // 15.25 seconds
-cheevo_speedrun("Marble Master",          "z2a2",  876) // 14.60 seconds
-cheevo_speedrun("Robo Ring Rush",         "z3a1", 1194) // 19.90 seconds
+cheevo_speedrun("Peridot Perfection",     "z1a2",  855) // 14.25 seconds
+cheevo_speedrun("Speedy Treasure Hunter", "z2a1",  912) // 15.20 seconds
+cheevo_speedrun("Marble Master",          "z2a2",  885) // 14.75 seconds
+cheevo_speedrun("Robo Ring Rush",         "z3a1", 1200) // 20.00 seconds
 cheevo_speedrun("Down to the Wire",       "z3a2",  870) // 14.50 seconds
 
 //--- Leaderboards ---
+function lb_ring_rush(act_str)
+{
+    screen = get_screen()
+    act = lookup_screen[act_str]
+    name = lookup_screen_text[act]
+    reset = screen != act
+    
+    leaderboard(
+        title = "Ring Rush: " + name,
+        description = "Collect all the rings and reach the goal post of " + name +
+            " as fast as possible.",
+        start = screen != prev(screen) && screen == act,
+        cancel = reset,
+        submit = never(reset) && tally_rings(act) && touched_goal(act),
+        value = always_true(), format = "FRAMES", lower_is_better = true
+    )
+}
 
+for z in range(1, 3)
+{
+    for a in range(1, 2)
+    {
+        lb_ring_rush("z" + z + "a" + a)
+    }
+}
 
+//--- Rich Presence ---
+function rp()
+{
+    screen = get_screen()
+    
+    is_act = lookup_screen["z1a1"] <= screen && screen <= lookup_screen["z3a2"]
+    is_menu = screen == 0x04 || screen == 0x05 || (0x0c <= screen && screen <= 0x10)
+    tbox_enabled = get_tbox_control() == lookup_tbox_control["enabled"]
+    
+    // Act RP
+    rich_presence_conditional_display(
+        is_act, "{0} Sonic is in {1}.",
+        rich_presence_lookup("action", get_player_action(), lookup_player_action_symbol),
+        rich_presence_lookup("act", screen, lookup_screen_text)
+    )
+    
+    // Title - Selecting Zone RP
+    rich_presence_conditional_display(
+        screen == lookup_screen["title"] && tbox_enabled,
+        "🖙 Sonic is selecting a zone…"
+    )
+    
+    // Menu RP
+    rich_presence_conditional_display(
+        is_menu, "{0} Sonic {1}",
+        rich_presence_lookup("symbol", screen, lookup_screen_symbol),
+        rich_presence_lookup("menu", screen, lookup_screen_text)
+    )
+    
+    // Default (for boot-up or in the case of an error)
+    rich_presence_display("⌛ Sonic is booting up the game…")
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+rp()

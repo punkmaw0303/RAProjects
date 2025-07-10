@@ -1,6 +1,10 @@
-"All Clear" is the only achievement that checks for screen switching instead of touching the goal post. Other achievements use triggers to display when they are active and require being able to reset them. Using the goal post as a goal condition for those makes resetting easier. Additionally, the code to check for this has been simplified and ________won't require re-timing time trial achievements______.
+"All Clear" is the only achievement that checks for screen switching instead of touching the goal post. Other achievements use triggers to display when they are active and require being able to reset them. Using the goal post as a goal condition for those makes resetting easier. Additionally, the code to check for this has been simplified and may not require re-timing time trial achievements.
 
-* All Clear
+* Code Notes
+ - Added header information
+ - Fixed notes in regards to the text box's message (was wrongfully identified as an ID# when it was, in fact, ASCII text.)
+ - Located a variable used for detecting if the player is colliding with a trigger that activates the text box.
+* "All Clear"
  - Never resets unless the emulator is reset
  - Pauses when not in an Act or on the first clear screen
  - Only checks for the screen switching from one specific screen to another specific screen (i.e.: Zone 1, Act 1 -> Zone 1, Act 2)
