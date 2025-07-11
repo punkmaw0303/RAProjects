@@ -1,3 +1,16 @@
+v.012
+* Speedrun achievements have been retimed; changes in logic did not seem to affect timing, so this is adjusting the difficulty of each.
+ - Peridot Coast, Act 1 & Robotropolis, Act 2: unchanged
+ - Peridot Coast, Act 2: 14.35 seconds -> 14.25 seconds
+ - Marble Valley, Act 1: 15.25 s. -> 15.20 s.
+ - Marble Valley, Act 2: 14.50 s. -> 14.75 s.
+ - Robotropolis, Act 1: 19.90 s. -> 20 s.
+* Leaderboards now use similar logic to the speedrun achievements and have unnecessary logic removed.
+* Manual Edits
+ - Any Alt Group logic was removed and reimplemented into the Core Group.
+ - Slightly condensed the "action" rich presence lookup table.
+
+v.011
 "All Clear" is the only achievement that checks for screen switching instead of touching the goal post. Other achievements use triggers to display when they are active and require being able to reset them. Using the goal post as a goal condition for those makes resetting easier. Additionally, the code to check for this has been simplified and may not require re-timing time trial achievements.
 
 * Code Notes
@@ -10,6 +23,6 @@
  - Only checks for the screen switching from one specific screen to another specific screen (i.e.: Zone 1, Act 1 -> Zone 1, Act 2)
 * Achievements for collecting all the rings in a Zone no longer checks for the player going out of order (no current way for them to do so without cheating).
 * "Can You Repeat That?" has been completely reworked and no longer relies on ASCII text.
-* Achievements where the player needs to be within specific coordinates are generated the same by RATools. They will be altered manually to remove Alt Groups and add the logic back into the Core Group.
+* Achievements where the player needs to be within specific coordinates are generated the same by RATools. They will be altered manually to remove Alt Groups and add the logic back into the Core Group. [See v.012]
 * "Hold right"-based achievements now only check if velocity decreases or the player moves left.
-* Speedrun achievements were heavily simplified and only check if the player is on the right screen and they touch the goal within the time limit.
+* Speedrun achievements were heavily simplified: they if the screen changes (to prime the achievement), the player is on the correct screen, and they touch the goal within the time limit.

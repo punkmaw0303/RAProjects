@@ -198,13 +198,11 @@ function cheevo_all_clear()
     
     // Measure the total number of clears.
     goal = measured(tally(6, cond[0], cond[1], cond[2], cond[3], cond[4], cond[5]))
-    // Pause when not in an Act or on the first clear screen.
-    pause = unless(lookup_screen["z1a1"] > screen || screen > lookup_screen["clear1"])
     
     achievement(
         title = "All Clear", points = 1, type = "win_condition",
         description = "Reach the goal post at the end of each Act.",
-        trigger = pause && goal
+        trigger = goal
     )
 }
 
@@ -420,7 +418,7 @@ function rp()
     rich_presence_conditional_display(
         is_act, "{0} Sonic is in {1}.",
         rich_presence_lookup("action", get_player_action(), lookup_player_action_symbol),
-        rich_presence_lookup("act", screen, lookup_screen_text)
+        rich_presence_lookup("text", screen, lookup_screen_text)
     )
     
     // Title - Selecting Zone RP
@@ -433,7 +431,7 @@ function rp()
     rich_presence_conditional_display(
         is_menu, "{0} Sonic {1}",
         rich_presence_lookup("symbol", screen, lookup_screen_symbol),
-        rich_presence_lookup("menu", screen, lookup_screen_text)
+        rich_presence_lookup("text", screen, lookup_screen_text)
     )
     
     // Default (for boot-up or in the case of an error)
