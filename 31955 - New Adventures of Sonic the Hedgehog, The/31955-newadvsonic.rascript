@@ -335,7 +335,7 @@ function cheevo_speedrun(ach_title, screen_str, frame_limit)
     
     start = primer()
     
-    goal = trigger_when(touched_goal(act))
+    goal = trigger_when(tally_rings(act) && touched_goal(act))
     
     achievement(
         title = ach_title, points = 5,
