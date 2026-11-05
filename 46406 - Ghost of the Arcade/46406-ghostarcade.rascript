@@ -4,78 +4,13 @@
 //----- Memory Functions & Enums -----
 //-- Global Functions --
 // $C530: [16-bit] Current Screen
-//        
-//        Values:
-//        Intro Card = 0x5aec
-//        Title = 0x6328
-//        Main Menu = 0x6490
-//        Arcade = 0x6c9c
-//        Pause Menu = 0x527c
-//        Tokipon Collection - Commons = 0x6d00
-//        Tokipon Collection - Uncommons = 0x6e71
-//        Tokipon Collection - Rares = 0x6fd9
-//        Tokipon Collection - Secret Rares = 0x7141
-//        Death Cutscene = 0x53e4
-//        Talking: Monster & Bullies = 0x79b1
-//        Talking: Bullies & Mr. G = 0x7b19
-//        Talking: Ghost, alone = 0x554c
-//        Talking: Mr. G & Ghost = 0x56b4
-//        Talking: Ghost & Dustin = 0x581c
-//        Talking: Ghost & Tim = 0x5984
-//        Talking: Ghost & Mr. G (goggles) = 0x7c81
-//        Talking: Ghost & Violeta = 0x4e44
-//        Talking: Ghost & Tauriphena = 0x7de9
-//        Talking: Monster & Tauriphena = 0x72aa
-//        Ending Hallway = 0x6695
-//        Credits 1 = 0x5f24
-//        Credits 2 = 0x68c8
-//        Credits 3 = 0x6a30
-//        Credits 4 = 0x6b98
-//        Credits 5 = 0x6794
-//        Credits 6 = 0x68fc
-//        "Escape Hell" Title = 0x7411
-//        "Escape Hell" Stage = 0x6c14
-//        "Escape Hell" Heaven = 0x608c
-//        "Monster Truck Tour" Title = 0x7579
-//        "Monster Truck Tour" Next Destination = 0x662c
-//        "Monster Truck Tour" Skyline Beach Card = 0x65f8
-//        "Monster Truck Tour" Skyline Beach Stage = 0x6db2
-//        "Monster Truck Tour" Windy Meadows Card = 0x6760
-//        "Monster Truck Tour" Windy Meadows Stage = 0x6b06
-//        "Monster Truck Tour" Frozen Fields Card = 0x6a64
-//        "Monster Truck Tour" Frozen Fields Stage = 0x705e
-//        "Monster Truck Tour" Lights of the Night Card = 0x6bcc
-//        "Monster Truck Tour" Lights of the Night Stage = 0x75b6
-//        "Monster Truck Tour" Endless Sands Card= 0x6d34
-//        "Monster Truck Tour" Endless Sands Stage = 0x7862
-//        "Monster Truck Tour" Lava Lake Card = 0x6e9c
-//        "Monster Truck Tour" Lava Lake Stage = 0x730a
-//        "Monster Truck Tour" Repair = 0x757a
-//        "M.O.N.S.T.E.R." Title = 0x76e1
-//        "M.O.N.S.T.E.R." Stage = 0x6a7a
-//        "M.O.N.S.T.E.R." Warning = 0x5c54
-//        "M.O.N.S.T.E.R." Cyan Enemy = 0x7492
-//        "M.O.N.S.T.E.R." Magenta Enemy = 0x6cb6
-//        "M.O.N.S.T.E.R." Yellow Enemy = 0x76ce
-//        "Nessi: Ocean Racer" Title = 0x7849
-//        "Nessi: Ocean Racer" Turtle = 0x5cd8
-//        "Nessi: Ocean Racer" Dolphin = 0x6e6c
-//        "Nessi: Ocean Racer" Octopus = 0x4802
-//        "Nessi: Ocean Racer" Narwhal = 0x5996
-//        "Nessi: Ocean Racer" Sea Serpent = 0x6b2a
-//        "Nessi: Ocean Racer" Sunfish = 0x6e0c
-//        "Nessi: Ocean Racer" Race Won = 0x61f4
-//        "Nessi: Ocean Racer" Race Lost = 0x64c4
-//        "Nessi: Ocean Racer" Upgrades = 0x635c
-//        "Curse of the Mummy" Title = 0x6101
-//        "Curse of the Mummy" Stage = 0x4009
-//        Game Over = 0x5114
 function get_curr_screen() => word(0xC530)
 SCREEN_INTRO = 0x5aec
 SCREEN_TITLE = 0x6328
 SCREEN_MAIN_MENU = 0x6490
-SCREEN_ARCADE = 0x6c9c
+SCREEN_ARCADE = 0x5d91
 SCREEN_PAUSE = 0x527c
+SCREEN_TOKIPON_MACHINE = 0x4fac
 SCREEN_TOKIPON_C = 0x6d00
 SCREEN_TOKIPON_U = 0x6e71
 SCREEN_TOKIPON_R = 0x6fd9
@@ -136,6 +71,47 @@ SCREEN_MUMMY_TITLE = 0x6101
 SCREEN_MUMMY_STAGE = 0x4009
 SCREEN_GAME_OVER = 0x5114
 
+// All of the screens within each arcade game (excluding title screens).
+ARRAY_SCREENS_HELL = [SCREEN_HELL_STAGE, SCREEN_HELL_HEAVEN]
+ARRAY_SCREENS_TRUCK =
+[
+    SCREEN_TRUCK_DEST,
+    SCREEN_TRUCK_BEACH_CARD,
+    SCREEN_TRUCK_BEACH_STAGE,
+    SCREEN_TRUCK_WINDY_CARD,
+    SCREEN_TRUCK_WINDY_STAGE,
+    SCREEN_TRUCK_ICE_CARD,
+    SCREEN_TRUCK_ICE_STAGE,
+    SCREEN_TRUCK_NIGHT_CARD,
+    SCREEN_TRUCK_NIGHT_STAGE,
+    SCREEN_TRUCK_SANDS_CARD,
+    SCREEN_TRUCK_SANDS_STAGE,
+    SCREEN_TRUCK_LAVA_CARD,
+    SCREEN_TRUCK_LAVA_STAGE,
+    SCREEN_TRUCK_REPAIR
+]
+ARRAY_SCREENS_MONSTER =
+[
+    SCREEN_MONSTER_STAGE,
+    SCREEN_MONSTER_WARN,
+    SCREEN_MONSTER_CYAN,
+    SCREEN_MONSTER_MAGENTA,
+    SCREEN_MONSTER_YELLOW
+]
+ARRAY_SCREENS_NESSI =
+[
+    SCREEN_NESSI_TURTLE,
+    SCREEN_NESSI_DOLPHIN,
+    SCREEN_NESSI_OCTO,
+    SCREEN_NESSI_NARWHAL,
+    SCREEN_NESSI_SERPENT,
+    SCREEN_NESSI_SUNFISH,
+    SCREEN_NESSI_WIN,
+    SCREEN_NESSI_LOSE,
+    SCREEN_NESSI_UPGRADE
+]
+ARRAY_SCREENS_MUMMY = [SCREEN_MUMMY_STAGE]
+
 // $C617: [8-bit][Bitflags] Current Input
 //        The inputs held down during this current frame.
 //        
@@ -188,7 +164,7 @@ function get_ui_str() => byte(0xC92B)
 //        Does not include her introduction or the conversation about Tauriphena. Once the conversation with Tauriphena is available, none of these conversation will be.
 //        
 //        Value range = [0,3]
-function current_violeta_conversation_loop() => byte(0xCDA5)
+function get_curr_violeta_convo_loop() => byte(0xCDA5)
 VIOLETA_CONVO_LOOP_FIRST = 0
 VIOLETA_CONVO_LOOP_SECOND = 1
 VIOLETA_CONVO_LOOP_THIRD = 2
@@ -199,8 +175,9 @@ VIOLETA_CONVO_LOOP_LAST = 3
 //        Values:
 //        0 = Loss
 //        1 = No Loss
-function get_intro_message_id() => byte(0xCADC)
-function won_intro() => get_intro_message_id() == 1
+function get_intro_msg_id() => byte(0xCADC)
+INTRO_MSG_LOST = 0
+INTRO_MSG_WON = 1
 
 // $CB9B: [16-bit] Tickets Held
 function get_tickets() => word(0xCB9B)
@@ -430,6 +407,7 @@ function get_tokipon_obtained_31() => word(0xCC23)
 // $CC25: [16-bit] Number Obtained: Tokipon #32 Epidralon
 function get_tokipon_obtained_32() => word(0xCC25)
 
+// Gets the specific Tokipon with the specified ID#.
 function get_tokipon_obtained(id)
 {
     address = TOKIPON_ADDRESSES_START + ((id - 1) * 2)
@@ -510,13 +488,168 @@ function get_nessi_letter_2() => byte(0xCC8B)
 // $CC8D: [8-bit] Nessi: Ocean Racer: Highscore - Third Letter
 function get_nessi_letter_3() => byte(0xCC8D)
 
-//----- Helper & Logic Functions -----
-
-
+//----- Helpers & Logic -----
+function on_memory_change(address, from, to)
+{
+    return prev(address) == from && address == to
+}
 
 //----- Achievements -----
+//-- Functions --
 //achievement(title, description, points, trigger, id=0, badge="0", type="missable / progression / win_condition"")
 
+function cheevo_won_intro()
+{
+    screen = get_curr_screen()
+    msg = get_intro_msg_id()
+    
+    // Reset when the player is no longer on the main "Escape Hell" screen.
+    reset = never(screen != SCREEN_HELL_STAGE)
+    
+    // Win when you get called over by the bullies, if you haven't fallen down.
+    goal = prev(msg) == INTRO_MSG_LOST && msg == INTRO_MSG_WON
+    
+    achievement
+    (
+        title = "One Small Step for Monster...",
+        description = "Get called over by the bullies without falling back down to hell.",
+        points = 2, type = "missable", id = 0,
+        trigger = reset && trigger_when(goal)
+    )
+}
+
+function cheevo_befriend_violeta()
+{
+    screen = get_curr_screen()
+    msg = get_curr_violeta_convo_loop()
+    
+    goal = screen == SCREEN_CONVO_GHOST_VIOLETA &&
+           on_memory_change(msg, VIOLETA_CONVO_LOOP_LAST, VIOLETA_CONVO_LOOP_FIRST)
+    
+    achievement
+    (
+        title = "Not All Humans Are Monsters",
+        description = "Befriend Violeta.",
+        points = 1, type = "missable", id = 1,
+        trigger = goal
+    )
+}
+
+function cheevo_highscore(screens_array, score, game, cheevo_name)
+{
+    // Reset if current screen is not in the given array or is the game over screen.
+    
+    // Start when going from any screen in the array to the game over screen.
+    
+    // Win if the highscore changes from the given score to any higher score.
+    
+}
+
+function cheevo_ending_ascend()
+{
+    screen = get_curr_screen()
+    
+    goal = on_memory_change(screen, SCREEN_ENDING, SCREEN_CREDITS_1)
+    
+    achievement
+    (
+        title = "Great Gaming Beyond",
+        description = "Move towards the light and leave this mortal coil.",
+        points = 5, type = "win_condition", id = 18,
+        trigger = goal
+    )
+}
+
+function cheevo_ending_revive()
+{
+    screen = get_curr_screen()
+    
+    goal = on_memory_change(screen, SCREEN_CONVO_MONSTER_TAURIPHENA, SCREEN_CREDITS_1)
+    
+    achievement
+    (
+        title = "Tauriphena's Blessing",
+        description = "Be brought back and live to game another day",
+        points = 5, type = "win_condition", id = 19,
+        trigger = goal
+    )
+}
+
+function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded, cheevo_id)
+{
+    screen = get_curr_screen()
+    
+        
+    // Create an array with all the relevant Tokipon addresses. 
+    tokipon_array = []
+    for i in range(start_id, start_id + 7)
+    {
+        array_push(tokipon_array, get_tokipon_obtained(i))
+    }
+    
+    // Reset if the player is not obtaining a new Tokipon
+    reset = never(get_curr_screen() != SCREEN_TOKIPON_MACHINE)
+    
+    // Check if any Tokipon's value has gone from 0 to 1.
+    start = on_memory_change(tokipon_array[0], 0, 1) ||
+        on_memory_change(tokipon_array[1], 0, 1) ||
+        on_memory_change(tokipon_array[2], 0, 1) ||
+        on_memory_change(tokipon_array[3], 0, 1) ||
+        on_memory_change(tokipon_array[4], 0, 1) ||
+        on_memory_change(tokipon_array[5], 0, 1) ||
+        on_memory_change(tokipon_array[6], 0, 1) ||
+        on_memory_change(tokipon_array[7], 0, 1)
+    
+    // Only tally Tokipon which have a value greater than 0.
+    goal = tally
+    (
+        8,
+        once(tokipon_array[0] > 0),
+        once(tokipon_array[1] > 0),
+        once(tokipon_array[2] > 0),
+        once(tokipon_array[3] > 0),
+        once(tokipon_array[4] > 0),
+        once(tokipon_array[5] > 0),
+        once(tokipon_array[6] > 0),
+        once(tokipon_array[7] > 0)
+    )
+    
+    achievement
+    (
+        title = cheevo_name,
+        description = format("Collect all 8 {0}-rarity Tokipon figurines.", rarity),
+        points = points_awarded, id = cheevo_id,
+        trigger = reset && start && measured(goal)
+    )
+}
+
+/*
+escape hell highscore
+escape hell reach heaven 5 times
+escape hell hit 3 angels
+truck tour highscore
+truck tour all tracks
+truck tour 1000 points no repair
+monster highscore
+monster all enemies
+monster __ fuel for __ seconds
+nessi highscore
+nessi powerups
+nessi 750 point no powerups
+mummy highscore
+mummy 2 ankhs
+mummy challenge 3
+*/
+
+//-- Declarations --
+cheevo_won_intro()
+cheevo_befriend_violeta()
+cheevo_ending_ascend()
+cheevo_ending_revive()
+cheevo_tokipon_collected(1, "Common Collector", "common", 5, 20)
+cheevo_tokipon_collected(9, "__TEST_NAME_U__", "uncommon", 10, 21)
+cheevo_tokipon_collected(17, "__TEST_NAME_R__", "rare", 25, 22)
+cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 23)
 
 //----- Leaderboards -----
 
