@@ -1,7 +1,7 @@
 // ~Homebrew~ Ghost of the Arcade
 // #ID = 46406
 
-//----- Memory Functions & Enums -----
+//----- Memory Functions & Constants -----
 //-- Global Functions --
 // $C530: [16-bit] Current Screen
 function get_curr_screen() => word(0xC530)
@@ -72,9 +72,12 @@ SCREEN_MUMMY_STAGE = 0x4009
 SCREEN_GAME_OVER = 0x5114
 
 // All of the screens within each arcade game (excluding title screens).
-ARRAY_SCREENS_HELL = [SCREEN_HELL_STAGE, SCREEN_HELL_HEAVEN]
-ARRAY_SCREENS_TRUCK =
-[
+ARRAY_SCREENS_HELL = [
+    SCREEN_HELL_STAGE,
+    SCREEN_HELL_HEAVEN,
+    SCREEN_GAME_OVER
+]
+ARRAY_SCREENS_TRUCK = [
     SCREEN_TRUCK_DEST,
     SCREEN_TRUCK_BEACH_CARD,
     SCREEN_TRUCK_BEACH_STAGE,
@@ -88,18 +91,18 @@ ARRAY_SCREENS_TRUCK =
     SCREEN_TRUCK_SANDS_STAGE,
     SCREEN_TRUCK_LAVA_CARD,
     SCREEN_TRUCK_LAVA_STAGE,
-    SCREEN_TRUCK_REPAIR
+    SCREEN_TRUCK_REPAIR,
+    SCREEN_GAME_OVER
 ]
-ARRAY_SCREENS_MONSTER =
-[
+ARRAY_SCREENS_MONSTER = [
     SCREEN_MONSTER_STAGE,
     SCREEN_MONSTER_WARN,
     SCREEN_MONSTER_CYAN,
     SCREEN_MONSTER_MAGENTA,
-    SCREEN_MONSTER_YELLOW
+    SCREEN_MONSTER_YELLOW,
+    SCREEN_GAME_OVER
 ]
-ARRAY_SCREENS_NESSI =
-[
+ARRAY_SCREENS_NESSI = [
     SCREEN_NESSI_TURTLE,
     SCREEN_NESSI_DOLPHIN,
     SCREEN_NESSI_OCTO,
@@ -108,9 +111,49 @@ ARRAY_SCREENS_NESSI =
     SCREEN_NESSI_SUNFISH,
     SCREEN_NESSI_WIN,
     SCREEN_NESSI_LOSE,
-    SCREEN_NESSI_UPGRADE
+    SCREEN_NESSI_UPGRADE,
+    SCREEN_GAME_OVER
 ]
-ARRAY_SCREENS_MUMMY = [SCREEN_MUMMY_STAGE]
+ARRAY_SCREENS_MUMMY = [
+    SCREEN_MUMMY_STAGE,
+    SCREEN_GAME_OVER
+]
+
+// All of the screen within each arcade game that can transition into the game over screen.
+ARRAY_SCREENS_HELL_GAME_OVER = [
+    SCREEN_HELL_STAGE,
+    SCREEN_GAME_OVER
+]
+ARRAY_SCREENS_TRUCK_GAME_OVER = [
+    SCREEN_TRUCK_BEACH_STAGE,
+    SCREEN_TRUCK_WINDY_STAGE,
+    SCREEN_TRUCK_ICE_STAGE,
+    SCREEN_TRUCK_NIGHT_STAGE,
+    SCREEN_TRUCK_SANDS_STAGE,
+    SCREEN_TRUCK_LAVA_STAGE,
+    SCREEN_GAME_OVER
+]
+ARRAY_SCREENS_MONSTER_GAME_OVER = [
+    SCREEN_MONSTER_STAGE,
+    SCREEN_MONSTER_CYAN,
+    SCREEN_MONSTER_MAGENTA,
+    SCREEN_MONSTER_YELLOW,
+    SCREEN_GAME_OVER
+]
+ARRAY_SCREENS_NESSI_GAME_OVER = [
+    SCREEN_NESSI_TURTLE,
+    SCREEN_NESSI_DOLPHIN,
+    SCREEN_NESSI_OCTO,
+    SCREEN_NESSI_NARWHAL,
+    SCREEN_NESSI_SERPENT,
+    SCREEN_NESSI_SUNFISH,
+    SCREEN_NESSI_LOSE,
+    SCREEN_GAME_OVER
+]
+ARRAY_SCREENS_MUMMY_GAME_OVER = [
+    SCREEN_MUMMY_STAGE,
+    SCREEN_GAME_OVER
+]
 
 // $C617: [8-bit][Bitflags] Current Input
 //        The inputs held down during this current frame.
@@ -264,7 +307,25 @@ function get_player_anim_spd() => byte(0xC0C7)
 //        0x12 = Movement disabled during transition
 //        0x15 = Is moving
 //        0x1d = Can move, standing still
-function player_nessi_cursor_control_state() => byte(0xC519)
+function get_player_control_state() => byte(0xC519)
+
+function is_player_movement_disabled()
+{
+    state = get_player_control_state()
+    return state == 0x01 || state == 0x12
+}
+
+function is_player_moving()
+{
+    state = get_player_control_state()
+    return state == 0x03 || state == 0x15
+}
+
+function is_player_still()
+{
+    return get_player_control_state() == 0x1d
+}
+
 
 //-- Arcade Game Functions --
 // $CBC1: [8-bit] Monster Truck Tour: Current Durability
@@ -494,6 +555,11 @@ function on_memory_change(address, from, to)
     return prev(address) == from && address == to
 }
 
+function is_between(value, min, max)
+{
+    return min <= value && value <= max
+}
+
 //----- Achievements -----
 //-- Functions --
 //achievement(title, description, points, trigger, id=0, badge="0", type="missable / progression / win_condition"")
@@ -501,20 +567,30 @@ function on_memory_change(address, from, to)
 function cheevo_won_intro()
 {
     screen = get_curr_screen()
-    msg = get_intro_msg_id()
+    player_y = get_player_yposition()
+    cannot_move = is_player_movement_disabled()
+    min_height = 13788
     
     // Reset when the player is no longer on the main "Escape Hell" screen.
     reset = never(screen != SCREEN_HELL_STAGE)
     
-    // Win when you get called over by the bullies, if you haven't fallen down.
-    goal = prev(msg) == INTRO_MSG_LOST && msg == INTRO_MSG_WON
+    // Start when the screen transitions from the main menu directly to the "Escape Hell" stage
+    // OR when starting from arcade mode, if no file was loaded.
+    start = once(
+        on_memory_change(screen, SCREEN_MAIN_MENU, SCREEN_HELL_STAGE) ||
+        get_hell_highscore() == 0
+    )
     
-    achievement
-    (
+    // Win when you cannot move and are above the specified height.
+    // This is when you get called over by the bullies.
+    goal = cannot_move && player_y < 13788
+    
+    achievement(
         title = "One Small Step for Monster...",
         description = "Get called over by the bullies without falling back down to hell.",
-        points = 2, type = "missable", id = 0,
-        trigger = reset && trigger_when(goal)
+        points = 1,
+        trigger = reset && start && trigger_when(goal),
+        type = "missable"
     )
 }
 
@@ -526,24 +602,155 @@ function cheevo_befriend_violeta()
     goal = screen == SCREEN_CONVO_GHOST_VIOLETA &&
            on_memory_change(msg, VIOLETA_CONVO_LOOP_LAST, VIOLETA_CONVO_LOOP_FIRST)
     
-    achievement
-    (
+    achievement(
         title = "Not All Humans Are Monsters",
         description = "Befriend Violeta.",
-        points = 1, type = "missable", id = 1,
-        trigger = goal
+        points = 0,
+        trigger = goal,
+        type = "missable"
     )
 }
 
-function cheevo_highscore(screens_array, score, game, cheevo_name)
+function cheevo_highscore(screens_array, game_over_array, highscore_mem, score_to_beat, 
+    cheevo_name, game_name, user_name)
 {
+    screen = get_curr_screen()
+    score = get_curr_score()
+
     // Reset if current screen is not in the given array or is the game over screen.
+    reset = !array_contains(screens_array, screen)
     
-    // Start when going from any screen in the array to the game over screen.
+    // Start if the highscore is at its initial value.
+    start = highscore_mem == score_to_beat
     
-    // Win if the highscore changes from the given score to any higher score.
+    // Win if the current score is higher than the highscore while on the game over screen.
+    goal = screen == SCREEN_GAME_OVER && score > highscore_mem
     
+    achievement(
+        title = cheevo_name,
+        description = format("In\"{0},\" beat {1}'s highscore of {2} points.",
+            game_name, user_name, score_to_beat),
+        points = 5,
+        trigger = reset && start && trigger_when(goal),
+        type = "progression"
+    )
 }
+
+function cheevo_hell_heaven()
+{
+    screen = get_curr_screen()
+    
+    // Reset when not on the stage or heaven screens.
+    reset = never(screen != SCREEN_HELL_STAGE && screen != SCREEN_HELL_HEAVEN)
+    
+    goal = tally(5, on_memory_change(screen, SCREEN_HELL_STAGE, SCREEN_HELL_HEAVEN))
+    
+    achievement(
+        title = "Heaven and Heaven",
+        description = "In \"Escape Hell,\" help 5 demons ascend to heaven in a single run.",
+        points = 10,
+        trigger = reset && measured(goal)
+    )
+}
+
+function cheevo_hell_angels()
+{
+    screen = get_curr_screen()
+    player_y = get_player_yposition()
+    cannot_move = is_player_movement_disabled()
+    
+    // Y-position ranges for each angel.
+    angel1 = is_between(player_y, 11228, 12500)
+    angel2 = is_between(player_y, 8400, 9300)
+    angel3 = is_between(player_y, 5468, 6748)
+    angel4 = is_between(player_y, 2900, 3700)
+    angel5 = is_between(player_y, 1628, 2450)
+    
+    // Collision detection for each angel.
+    angel1_col = cannot_move && angel1
+    angel2_col = cannot_move && angel2
+    angel3_col = cannot_move && angel3
+    angel4_col = cannot_move && angel4
+    angel5_col = cannot_move && angel5
+    
+    // Reset when not on the stage screen.
+    reset = never (screen != SCREEN_HELL_STAGE)
+    
+    // Tally each angel that was collided into.
+    goal = tally(
+        3,
+        once(angel1_col),
+        once(angel2_col),
+        once(angel3_col),
+        once(angel4_col),
+        once(angel5_col)
+    )
+    
+    achievement(
+        title = "Hell and Hell",
+        description = "In \"Escape Hell,\" collide with 3 angels on your descent back down to hell.",
+        points = 10,
+        trigger = reset && measured(goal)
+    )
+}
+
+function cheevo_truck_tracks()
+{
+    screen = get_curr_screen()
+    
+    // Check when a track has been cleared.
+    beach_clear = on_memory_change(screen, SCREEN_TRUCK_BEACH_STAGE, SCREEN_TRUCK_REPAIR)
+    windy_clear = on_memory_change(screen, SCREEN_TRUCK_WINDY_STAGE, SCREEN_TRUCK_REPAIR)
+    ice_clear = on_memory_change(screen, SCREEN_TRUCK_ICE_STAGE, SCREEN_TRUCK_REPAIR)
+    night_clear = on_memory_change(screen, SCREEN_TRUCK_NIGHT_STAGE, SCREEN_TRUCK_REPAIR)
+    sands_clear = on_memory_change(screen, SCREEN_TRUCK_SANDS_STAGE, SCREEN_TRUCK_REPAIR)
+    lava_clear = on_memory_change(screen, SCREEN_TRUCK_LAVA_STAGE, SCREEN_TRUCK_REPAIR)
+    
+    goal = tally(
+        6,
+        once(beach_clear),
+        once(windy_clear),
+        once(ice_clear),
+        once(night_clear),
+        once(sands_clear),
+        once(lava_clear)
+    )
+    
+    achievement(
+        title = "World Tour",
+        description = "In \"Monster Truck Tour,\" clear all 6 tracks in a single session.",
+        points = 10,
+        trigger = measured(goal)
+    )
+}
+
+// truck all tracks
+// truck 1000 pts. no repair
+// monster all enemies
+// monster fuel for seconds
+// nessi powerups
+// nessi 750 pts. no powerups
+
+function cheevo_mummy_ankhs()
+{
+    screen = get_curr_screen()
+    score = get_curr_score()
+    
+    // Reset when not on the mummy stage screen.
+    reset = never(screen != SCREEN_MUMMY_STAGE)
+    
+    // Tally each time the score increases by 100 points (collected an ankh).
+    goal = tally(2, on_memory_change(score, score - 100, score))
+    
+    achievement(
+        title = "Second Life",
+        description = "In \"Curse of the Mummy,\" collect 2 ankhs in a single run.",
+        points = 10,
+        trigger = reset && measured(goal)
+    )
+}
+
+// mummy quick kills
 
 function cheevo_ending_ascend()
 {
@@ -551,12 +758,12 @@ function cheevo_ending_ascend()
     
     goal = on_memory_change(screen, SCREEN_ENDING, SCREEN_CREDITS_1)
     
-    achievement
-    (
+    achievement(
         title = "Great Gaming Beyond",
         description = "Move towards the light and leave this mortal coil.",
-        points = 5, type = "win_condition", id = 18,
-        trigger = goal
+        points = 5,
+        trigger = goal,
+        type = "win_condition"
     )
 }
 
@@ -570,12 +777,13 @@ function cheevo_ending_revive()
     (
         title = "Tauriphena's Blessing",
         description = "Be brought back and live to game another day",
-        points = 5, type = "win_condition", id = 19,
-        trigger = goal
+        points = 5,
+        trigger = goal,
+        type = "win_condition"
     )
 }
 
-function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded, cheevo_id)
+function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded)
 {
     screen = get_curr_screen()
     
@@ -618,38 +826,76 @@ function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded,
     (
         title = cheevo_name,
         description = format("Collect all 8 {0}-rarity Tokipon figurines.", rarity),
-        points = points_awarded, id = cheevo_id,
+        points = points_awarded,
         trigger = reset && start && measured(goal)
     )
 }
 
-/*
-escape hell highscore
-escape hell reach heaven 5 times
-escape hell hit 3 angels
-truck tour highscore
-truck tour all tracks
-truck tour 1000 points no repair
-monster highscore
-monster all enemies
-monster __ fuel for __ seconds
-nessi highscore
-nessi powerups
-nessi 750 point no powerups
-mummy highscore
-mummy 2 ankhs
-mummy challenge 3
-*/
-
 //-- Declarations --
 cheevo_won_intro()
 cheevo_befriend_violeta()
+
+cheevo_highscore(
+    screens_array = ARRAY_SCREENS_HELL,
+    game_over_array = ARRAY_SCREENS_HELL_GAME_OVER,
+    highscore_mem = get_hell_highscore(),
+    score_to_beat = 666,
+    cheevo_name = "Heaven or Hell",
+    game_name = "Escape Hell",
+    user_name = "Violeta"
+)
+cheevo_hell_heaven()
+cheevo_hell_angels()
+
+cheevo_highscore(
+    screens_array = ARRAY_SCREENS_TRUCK,
+    game_over_array = ARRAY_SCREENS_TRUCK_GAME_OVER,
+    highscore_mem = get_truck_highscore(),
+    score_to_beat = 712,
+    cheevo_name = "Take That, Bully!",
+    game_name = "Monster Truck Tour",
+    user_name = "Jerry"
+)
+cheevo_truck_tracks()
+
+cheevo_highscore(
+    screens_array = ARRAY_SCREENS_MONSTER,
+    game_over_array = ARRAY_SCREENS_MONSTER_GAME_OVER,
+    highscore_mem = get_monster_highscore(),
+    score_to_beat = 681,
+    cheevo_name = "Big Bully Beatdown",
+    game_name = "M.O.N.S.T.E.R.",
+    user_name = "Dustin"
+)
+
+cheevo_highscore(
+    screens_array = ARRAY_SCREENS_NESSI,
+    game_over_array = ARRAY_SCREENS_NESSI_GAME_OVER,
+    highscore_mem = get_nessi_highscore(),
+    score_to_beat = 435,
+    cheevo_name = "Friend of Dorrie",
+    game_name = "Nessi: Ocean Racer",
+    user_name = "Tim"
+)
+
+cheevo_highscore(
+    screens_array = ARRAY_SCREENS_MUMMY,
+    game_over_array = ARRAY_SCREENS_MUMMY_GAME_OVER,
+    highscore_mem = get_mummy_highscore(),
+    score_to_beat = 493,
+    cheevo_name = "Immortalized",
+    game_name = "Curse of the Mummy",
+    user_name = "Mr. G"
+)
+cheevo_mummy_ankhs()
+
 cheevo_ending_ascend()
 cheevo_ending_revive()
-cheevo_tokipon_collected(1, "Common Collector", "common", 5, 20)
-cheevo_tokipon_collected(9, "__TEST_NAME_U__", "uncommon", 10, 21)
-cheevo_tokipon_collected(17, "__TEST_NAME_R__", "rare", 25, 22)
-cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 23)
+
+cheevo_tokipon_collected(1, "Common Collector", "common", 5)
+cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10)
+cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25)
+cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50)
 
 //----- Leaderboards -----
 
