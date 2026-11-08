@@ -590,6 +590,8 @@ function cheevo_won_intro()
         description = "Get called over by the bullies without falling back down to hell.",
         points = 1,
         trigger = reset && start && trigger_when(goal),
+        id = 649897,
+        badge = "0",
         type = "missable"
     )
 }
@@ -607,18 +609,27 @@ function cheevo_befriend_violeta()
         description = "Befriend Violeta.",
         points = 0,
         trigger = goal,
+        id = 649900,
+        badge = "21475299",
         type = "missable"
     )
 }
 
+// NOT WORKING
 function cheevo_highscore(screens_array, game_over_array, highscore_mem, score_to_beat, 
     cheevo_name, game_name, user_name)
 {
     screen = get_curr_screen()
     score = get_curr_score()
-
-    // Reset if current screen is not in the given array or is the game over screen.
-    reset = !array_contains(screens_array, screen)
+    
+    // Reset if the current screen is not in the given array.
+    reset = true
+    for i in screens_array
+    {
+        reset = reset && (i != screen)
+    }
+    reset = never(reset)
+    //reset = !array_contains(screens_array, screen)
     
     // Start if the highscore is at its initial value.
     start = highscore_mem == score_to_beat
@@ -628,7 +639,7 @@ function cheevo_highscore(screens_array, game_over_array, highscore_mem, score_t
     
     achievement(
         title = cheevo_name,
-        description = format("In\"{0},\" beat {1}'s highscore of {2} points.",
+        description = format("In \"{0},\" beat {1}'s highscore of {2} points.",
             game_name, user_name, score_to_beat),
         points = 5,
         trigger = reset && start && trigger_when(goal),
@@ -649,10 +660,13 @@ function cheevo_hell_heaven()
         title = "Heaven and Heaven",
         description = "In \"Escape Hell,\" help 5 demons ascend to heaven in a single run.",
         points = 10,
-        trigger = reset && measured(goal)
+        trigger = reset && measured(goal),
+        id = 649905,
+        badge = "21475304"
     )
 }
 
+// NOT WORKING - Collision detecting even if text box doesn't open.
 function cheevo_hell_angels()
 {
     screen = get_curr_screen()
@@ -720,7 +734,9 @@ function cheevo_truck_tracks()
         title = "World Tour",
         description = "In \"Monster Truck Tour,\" clear all 6 tracks in a single session.",
         points = 10,
-        trigger = measured(goal)
+        trigger = measured(goal),
+        id = 649907,
+        badge = "21475306"
     )
 }
 
@@ -746,7 +762,9 @@ function cheevo_mummy_ankhs()
         title = "Second Life",
         description = "In \"Curse of the Mummy,\" collect 2 ankhs in a single run.",
         points = 10,
-        trigger = reset && measured(goal)
+        trigger = reset && measured(goal),
+        id = 649906,
+        badge = "21475305"
     )
 }
 
@@ -763,7 +781,9 @@ function cheevo_ending_ascend()
         description = "Move towards the light and leave this mortal coil.",
         points = 5,
         trigger = goal,
-        type = "win_condition"
+        type = "win_condition",
+        id = 649898,
+        badge = "0"
     )
 }
 
@@ -779,11 +799,14 @@ function cheevo_ending_revive()
         description = "Be brought back and live to game another day",
         points = 5,
         trigger = goal,
-        type = "win_condition"
+        type = "win_condition",
+        id = 649899,
+        badge = "0"
     )
 }
 
-function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded)
+function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded,
+    cheevo_id = 0, cheevo_badge = "0")
 {
     screen = get_curr_screen()
     
@@ -827,7 +850,9 @@ function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded)
         title = cheevo_name,
         description = format("Collect all 8 {0}-rarity Tokipon figurines.", rarity),
         points = points_awarded,
-        trigger = reset && start && measured(goal)
+        trigger = reset && start && measured(goal),
+        id = cheevo_id,
+        badge = cheevo_badge
     )
 }
 
@@ -892,10 +917,10 @@ cheevo_mummy_ankhs()
 cheevo_ending_ascend()
 cheevo_ending_revive()
 
-cheevo_tokipon_collected(1, "Common Collector", "common", 5)
-cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10)
-cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25)
-cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50)
+cheevo_tokipon_collected(1, "Common Collector", "common", 5, 649901, "21475300")
+cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10, 649902, "21475301")
+cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25, 649903, "21475302")
+cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 649904, "21475303")
 
 //----- Leaderboards -----
 
