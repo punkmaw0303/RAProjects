@@ -740,8 +740,28 @@ function cheevo_truck_tracks()
     )
 }
 
-// truck all tracks
-// truck 1000 pts. no repair
+function cheevo_no_repair()
+{
+    screen = get_curr_screen()
+    durability = get_truck_durability()
+    score = get_curr_score()
+    target_score = 1000
+    
+    reset = never(durability > prev(durability) && screen == SCREEN_TRUCK_TITLE)
+    
+    start = once(on_memory_change(screen, SCREEN_TRUCK_TITLE, SCREEN_TRUCK_DEST))
+    
+    goal = score >= target_score
+    
+    achievement(
+        title = "On-Road Racer",
+        description = "In \"Monster Truck Tour,\" reach 1000 points without repairing the truck.",
+        points = 25,
+        trigger = reset && start && trigger_when(goal)
+    )
+}
+
+
 // monster all enemies
 // monster fuel for seconds
 // nessi powerups
@@ -882,6 +902,7 @@ cheevo_highscore(
     user_name = "Jerry"
 )
 cheevo_truck_tracks()
+cheevo_no_repair()
 
 cheevo_highscore(
     screens_array = ARRAY_SCREENS_MONSTER,
