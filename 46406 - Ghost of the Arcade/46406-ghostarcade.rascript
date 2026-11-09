@@ -5,10 +5,13 @@
 //-- Global Functions --
 // $C530: [16-bit] Current Screen
 function get_curr_screen() => word(0xC530)
-SCREEN_INTRO = 0x5aec
+SCREEN_BOOT = 0x0000
+SCREEN_INTRO_CARD = 0x5aec
 SCREEN_TITLE = 0x6328
 SCREEN_MAIN_MENU = 0x6490
-SCREEN_ARCADE = 0x5d91
+SCREEN_ARCADE_INTRO_1 = 0x6c9c
+SCREEN_ARCADE_INTRO_2 = 0x6c74
+SCREEN_ARCADE_OVERWORLD = 0x5d91
 SCREEN_PAUSE = 0x527c
 SCREEN_TOKIPON_MACHINE = 0x4fac
 SCREEN_TOKIPON_C = 0x6d00
@@ -70,12 +73,12 @@ SCREEN_NESSI_UPGRADE = 0x635c
 SCREEN_MUMMY_TITLE = 0x6101
 SCREEN_MUMMY_STAGE = 0x4009
 SCREEN_GAME_OVER = 0x5114
+SCREEN_NAME_ENTRY = 0x72a9
 
 // All of the screens within each arcade game (excluding title screens).
 ARRAY_SCREENS_HELL = [
     SCREEN_HELL_STAGE,
-    SCREEN_HELL_HEAVEN,
-    SCREEN_GAME_OVER
+    SCREEN_HELL_HEAVEN
 ]
 ARRAY_SCREENS_TRUCK = [
     SCREEN_TRUCK_DEST,
@@ -91,16 +94,14 @@ ARRAY_SCREENS_TRUCK = [
     SCREEN_TRUCK_SANDS_STAGE,
     SCREEN_TRUCK_LAVA_CARD,
     SCREEN_TRUCK_LAVA_STAGE,
-    SCREEN_TRUCK_REPAIR,
-    SCREEN_GAME_OVER
+    SCREEN_TRUCK_REPAIR
 ]
 ARRAY_SCREENS_MONSTER = [
     SCREEN_MONSTER_STAGE,
     SCREEN_MONSTER_WARN,
     SCREEN_MONSTER_CYAN,
     SCREEN_MONSTER_MAGENTA,
-    SCREEN_MONSTER_YELLOW,
-    SCREEN_GAME_OVER
+    SCREEN_MONSTER_YELLOW
 ]
 ARRAY_SCREENS_NESSI = [
     SCREEN_NESSI_TURTLE,
@@ -111,48 +112,41 @@ ARRAY_SCREENS_NESSI = [
     SCREEN_NESSI_SUNFISH,
     SCREEN_NESSI_WIN,
     SCREEN_NESSI_LOSE,
-    SCREEN_NESSI_UPGRADE,
-    SCREEN_GAME_OVER
+    SCREEN_NESSI_UPGRADE
 ]
 ARRAY_SCREENS_MUMMY = [
-    SCREEN_MUMMY_STAGE,
-    SCREEN_GAME_OVER
+    SCREEN_MUMMY_STAGE
 ]
 
-// All of the screen within each arcade game that can transition into the game over screen.
-ARRAY_SCREENS_HELL_GAME_OVER = [
-    SCREEN_HELL_STAGE,
-    SCREEN_GAME_OVER
+// Used for the highscore achievement functions.
+ARRAY_SCREENS_HELL_PLAY = [
+    SCREEN_HELL_STAGE
 ]
-ARRAY_SCREENS_TRUCK_GAME_OVER = [
+ARRAY_SCREENS_TRUCK_PLAY = [
     SCREEN_TRUCK_BEACH_STAGE,
     SCREEN_TRUCK_WINDY_STAGE,
     SCREEN_TRUCK_ICE_STAGE,
     SCREEN_TRUCK_NIGHT_STAGE,
     SCREEN_TRUCK_SANDS_STAGE,
-    SCREEN_TRUCK_LAVA_STAGE,
-    SCREEN_GAME_OVER
+    SCREEN_TRUCK_LAVA_STAGE
 ]
-ARRAY_SCREENS_MONSTER_GAME_OVER = [
+ARRAY_SCREENS_MONSTER_PLAY = [
     SCREEN_MONSTER_STAGE,
     SCREEN_MONSTER_CYAN,
     SCREEN_MONSTER_MAGENTA,
-    SCREEN_MONSTER_YELLOW,
-    SCREEN_GAME_OVER
+    SCREEN_MONSTER_YELLOW
 ]
-ARRAY_SCREENS_NESSI_GAME_OVER = [
+ARRAY_SCREENS_NESSI_PLAY = [
     SCREEN_NESSI_TURTLE,
     SCREEN_NESSI_DOLPHIN,
     SCREEN_NESSI_OCTO,
     SCREEN_NESSI_NARWHAL,
     SCREEN_NESSI_SERPENT,
     SCREEN_NESSI_SUNFISH,
-    SCREEN_NESSI_LOSE,
-    SCREEN_GAME_OVER
+    SCREEN_NESSI_LOSE
 ]
-ARRAY_SCREENS_MUMMY_GAME_OVER = [
-    SCREEN_MUMMY_STAGE,
-    SCREEN_GAME_OVER
+ARRAY_SCREENS_MUMMY_PLAY = [
+    SCREEN_MUMMY_STAGE
 ]
 
 // $C617: [8-bit][Bitflags] Current Input
@@ -221,6 +215,9 @@ VIOLETA_CONVO_LOOP_LAST = 3
 function get_intro_msg_id() => byte(0xCADC)
 INTRO_MSG_LOST = 0
 INTRO_MSG_WON = 1
+
+// $CC3F: [16-bit] Number of Highscores Beaten
+function get_highscores_beaten() => word(0xCC3F)
 
 // $CB9B: [16-bit] Tickets Held
 function get_tickets() => word(0xCB9B)
@@ -370,6 +367,9 @@ function get_nessi_djump_up() => word(0xCBDD)
 function has_double_jump() => get_nessi_djump_up() == 1
 
 //-- Tokipon Functions --
+// $CBE5: [16-bit] Number Obtained: Unique Tokipon
+function get_tokipon_obtained_unique() => word(0x00cbe5)
+
 TOKIPON_ADDRESSES_START = 0xCBE7
 
 // $CBE7: [16-bit] Number Obtained: Tokipon #1 Slomp
@@ -591,7 +591,7 @@ function cheevo_won_intro()
         points = 1,
         trigger = reset && start && trigger_when(goal),
         id = 649897,
-        badge = "0",
+        badge = "742535",
         type = "missable"
     )
 }
@@ -610,39 +610,38 @@ function cheevo_befriend_violeta()
         points = 0,
         trigger = goal,
         id = 649900,
-        badge = "21475299",
+        badge = "742536",
         type = "missable"
     )
 }
 
-// NOT WORKING
-function cheevo_highscore(screens_array, game_over_array, highscore_mem, score_to_beat, 
-    cheevo_name, game_name, user_name)
+// play_screen_array MUST have 7 values, with 0 denoting unused values.
+function cheevo_highscore(cheevo_name, game_name, user_name, init_score, highscore_mem,
+    title_screen, first_screen, cheevo_id = 0, cheevo_badge = "0")
 {
     screen = get_curr_screen()
     score = get_curr_score()
     
-    // Reset if the current screen is not in the given array.
-    reset = true
-    for i in screens_array
-    {
-        reset = reset && (i != screen)
-    }
-    reset = never(reset)
-    //reset = !array_contains(screens_array, screen)
+    // Reset when returning to the title screen.
+    reset = never(screen == title_screen)
     
-    // Start if the highscore is at its initial value.
-    start = highscore_mem == score_to_beat
+    // Start when transitioning from the title screen to the first gameplay screen
+    // and the highscore is still at its initial value.
+    start = once(on_memory_change(screen, title_screen, first_screen) &&
+        highscore_mem == init_score)
     
-    // Win if the current score is higher than the highscore while on the game over screen.
-    goal = screen == SCREEN_GAME_OVER && score > highscore_mem
+    // Win if the current score is higher than the highscore on the game over screen.
+    // NOTE: If needed, check which screen the player comes from using the PLAY arrays.
+    goal = screen == SCREEN_GAME_OVER && score > init_score
     
     achievement(
         title = cheevo_name,
         description = format("In \"{0},\" beat {1}'s highscore of {2} points.",
-            game_name, user_name, score_to_beat),
+            game_name, user_name, init_score),
         points = 5,
         trigger = reset && start && trigger_when(goal),
+        id = cheevo_id,
+        badge = cheevo_badge,
         type = "progression"
     )
 }
@@ -662,7 +661,7 @@ function cheevo_hell_heaven()
         points = 10,
         trigger = reset && measured(goal),
         id = 649905,
-        badge = "21475304"
+        badge = "742541"
     )
 }
 
@@ -704,7 +703,9 @@ function cheevo_hell_angels()
         title = "Hell and Hell",
         description = "In \"Escape Hell,\" collide with 3 angels on your descent back down to hell.",
         points = 10,
-        trigger = reset && measured(goal)
+        trigger = reset && measured(goal),
+        id = 650238,
+        badge = "742712"
     )
 }
 
@@ -736,7 +737,7 @@ function cheevo_truck_tracks()
         points = 10,
         trigger = measured(goal),
         id = 649907,
-        badge = "21475306"
+        badge = "742543"
     )
 }
 
@@ -757,7 +758,9 @@ function cheevo_no_repair()
         title = "On-Road Racer",
         description = "In \"Monster Truck Tour,\" reach 1000 points without repairing the truck.",
         points = 25,
-        trigger = reset && start && trigger_when(goal)
+        trigger = reset && start && trigger_when(goal),
+        id = 650244,
+        badge = "742718"
     )
 }
 
@@ -784,7 +787,7 @@ function cheevo_mummy_ankhs()
         points = 10,
         trigger = reset && measured(goal),
         id = 649906,
-        badge = "21475305"
+        badge = "742542"
     )
 }
 
@@ -803,7 +806,7 @@ function cheevo_ending_ascend()
         trigger = goal,
         type = "win_condition",
         id = 649898,
-        badge = "0"
+        badge = "742710"
     )
 }
 
@@ -821,7 +824,7 @@ function cheevo_ending_revive()
         trigger = goal,
         type = "win_condition",
         id = 649899,
-        badge = "0"
+        badge = "742711"
     )
 }
 
@@ -880,70 +883,133 @@ function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded,
 cheevo_won_intro()
 cheevo_befriend_violeta()
 
-cheevo_highscore(
-    screens_array = ARRAY_SCREENS_HELL,
-    game_over_array = ARRAY_SCREENS_HELL_GAME_OVER,
-    highscore_mem = get_hell_highscore(),
-    score_to_beat = 666,
-    cheevo_name = "Heaven or Hell",
-    game_name = "Escape Hell",
-    user_name = "Violeta"
+cheevo_highscore("Heaven or Hell", "Escape Hell", "Violeta", 666,
+    get_hell_highscore(), SCREEN_HELL_TITLE, SCREEN_HELL_STAGE,
+    650240, "742714"
 )
 cheevo_hell_heaven()
 cheevo_hell_angels()
 
-cheevo_highscore(
-    screens_array = ARRAY_SCREENS_TRUCK,
-    game_over_array = ARRAY_SCREENS_TRUCK_GAME_OVER,
-    highscore_mem = get_truck_highscore(),
-    score_to_beat = 712,
-    cheevo_name = "Take That, Bully!",
-    game_name = "Monster Truck Tour",
-    user_name = "Jerry"
+cheevo_highscore("Take That, Bully!", "Monster Truck Tour", "Jerry", 712,
+    get_truck_highscore(), SCREEN_TRUCK_TITLE, SCREEN_TRUCK_DEST,
+    650239, "742713"
 )
 cheevo_truck_tracks()
 cheevo_no_repair()
 
-cheevo_highscore(
-    screens_array = ARRAY_SCREENS_MONSTER,
-    game_over_array = ARRAY_SCREENS_MONSTER_GAME_OVER,
-    highscore_mem = get_monster_highscore(),
-    score_to_beat = 681,
-    cheevo_name = "Big Bully Beatdown",
-    game_name = "M.O.N.S.T.E.R.",
-    user_name = "Dustin"
+cheevo_highscore("Big Bully Beatdown", "M.O.N.S.T.E.R.", "Dustin", 681,
+    get_monster_highscore(), SCREEN_MONSTER_TITLE, SCREEN_MONSTER_STAGE,
+    650241, "742715"
 )
 
-cheevo_highscore(
-    screens_array = ARRAY_SCREENS_NESSI,
-    game_over_array = ARRAY_SCREENS_NESSI_GAME_OVER,
-    highscore_mem = get_nessi_highscore(),
-    score_to_beat = 435,
-    cheevo_name = "Friend of Dorrie",
-    game_name = "Nessi: Ocean Racer",
-    user_name = "Tim"
+cheevo_highscore("Friend of Dorrie", "Nessi: Ocean Racer", "Tim", 435,
+    get_nessi_highscore(), SCREEN_NESSI_TITLE, SCREEN_NESSI_TURTLE,
+    650243, "742717"
 )
 
-cheevo_highscore(
-    screens_array = ARRAY_SCREENS_MUMMY,
-    game_over_array = ARRAY_SCREENS_MUMMY_GAME_OVER,
-    highscore_mem = get_mummy_highscore(),
-    score_to_beat = 493,
-    cheevo_name = "Immortalized",
-    game_name = "Curse of the Mummy",
-    user_name = "Mr. G"
+cheevo_highscore("Immortalized", "Curse of the Mummy", "Mr. G", 493,
+    get_mummy_highscore(), SCREEN_MUMMY_TITLE, SCREEN_MUMMY_STAGE,
+    650242, "742716"
 )
 cheevo_mummy_ankhs()
 
 cheevo_ending_ascend()
 cheevo_ending_revive()
 
-cheevo_tokipon_collected(1, "Common Collector", "common", 5, 649901, "21475300")
-cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10, 649902, "21475301")
-cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25, 649903, "21475302")
-cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 649904, "21475303")
+cheevo_tokipon_collected(1, "Common Collector", "common", 5, 649901, "742537")
+cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10, 649902, "742538")
+cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25, 649903, "742539")
+cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 649904, "742540")
 
 //----- Leaderboards -----
 
 
 //----- Rich Presence -----
+//-- Lookups --
+mkid_str = "monster kid"
+main_menu_str = "haunting the main menu."
+bullied_str = "being picked on by the bullies."
+toki_str = "checking out his awesome Tokipon collection!"
+credits_str = "viewing the credits. Thank you for playing!"
+
+lookup_screen_mkid = {
+    SCREEN_DEATH: mkid_str,
+    SCREEN_CONVO_MONSTER_BULLIES: mkid_str,
+    SCREEN_ARCADE_INTRO_1: mkid_str,
+    SCREEN_CONVO_MONSTER_TAURIPHENA: mkid_str,
+    SCREEN_CREDITS_1: mkid_str,
+    SCREEN_CREDITS_2: mkid_str,
+    SCREEN_CREDITS_3: mkid_str,
+    SCREEN_CREDITS_4: mkid_str,
+    SCREEN_CREDITS_5: mkid_str,
+    SCREEN_CREDITS_6: mkid_str
+}
+
+lookup_screen_game = {
+
+}
+
+lookup_screen_text = {
+    SCREEN_BOOT: main_menu_str,
+    SCREEN_INTRO_CARD: main_menu_str,
+    SCREEN_TITLE: main_menu_str,
+    SCREEN_MAIN_MENU: main_menu_str,
+    
+    SCREEN_DEATH: bullied_str,
+    SCREEN_CONVO_MONSTER_BULLIES: bullied_str,
+    SCREEN_ARCADE_INTRO_1: bullied_str,
+    
+    SCREEN_HELL_TITLE: "ESCAPE HELL",
+    SCREEN_TRUCK_TITLE: "MONSTER TRUCK TOUR",
+    SCREEN_MONSTER_TITLE: "M.O.N.S.T.E.R.",
+    SCREEN_NESSI_TITLE: "NESSI: OCEAN RACER",
+    SCREEN_MUMMY_TITLE: "CURSE OF THE MUMMY",
+    
+    SCREEN_ENDING: "ascending…",
+    SCREEN_CONVO_MONSTER_TAURIPHENA: "has been brought back to life!",
+    
+    SCREEN_CREDITS_1: credits_str,
+    SCREEN_CREDITS_2: credits_str,
+    SCREEN_CREDITS_3: credits_str,
+    SCREEN_CREDITS_4: credits_str,
+    SCREEN_CREDITS_5: credits_str,
+    SCREEN_CREDITS_6: credits_str,
+    
+    SCREEN_TOKIPON_C: toki_str,
+    SCREEN_TOKIPON_U: toki_str,
+    SCREEN_TOKIPON_R: toki_str,
+    SCREEN_TOKIPON_SR: toki_str
+}
+
+//-- Function & Declaration --
+function rp()
+{
+    screen = get_curr_screen()
+    
+    rich_presence_conditional_display(
+        screen == SCREEN_HELL_TITLE || screen == SCREEN_TRUCK_TITLE ||
+        screen == SCREEN_MONSTER_TITLE || screen == SCREEN_NESSI_TITLE ||
+        screen == SCREEN_MUMMY_TITLE,
+        "The ghost is on the title screen of {0}.",
+        rich_presence_lookup("GameTitle", screen, lookup_screen_text)
+    )
+    
+    // Main Menu
+    rich_presence_conditional_display(
+        screen == SCREEN_BOOT || screen == SCREEN_INTRO_CARD || screen == SCREEN_TITLE ||
+        screen == SCREEN_MAIN_MENU,
+        "The ghost is haunting the main menu."
+    )
+    
+    // Default - Intro, arcade overworld, most convos, pause menu, Tokipon collection,
+    //           Tokipon machine
+    rich_presence_display("The {0} is {1} • 🏆 {2}/5 • 🎟️{3} • 🦖 {4}/32",
+        rich_presence_lookup("Form", screen, lookup_screen_mkid, "ghost"),
+        rich_presence_lookup("Descriptor", screen, lookup_screen_text, "haunting the arcade."),
+        rich_presence_macro("Number", get_highscores_beaten()),
+        rich_presence_macro("Number", get_tickets()),
+        rich_presence_macro("Number", get_tokipon_obtained_unique())
+    )
+}
+
+rp()
