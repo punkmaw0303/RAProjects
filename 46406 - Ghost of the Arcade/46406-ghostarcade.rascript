@@ -57,6 +57,7 @@ SCREEN_TRUCK_REPAIR = 0x757a
 SCREEN_MONSTER_TITLE = 0x76e1
 SCREEN_MONSTER_STAGE = 0x6a7a
 SCREEN_MONSTER_WARN = 0x5c54
+SCREEN_MONSTER_VICTORY = 0x5dbc
 SCREEN_MONSTER_CYAN = 0x7492
 SCREEN_MONSTER_MAGENTA = 0x6cb6
 SCREEN_MONSTER_YELLOW = 0x76ce
@@ -66,7 +67,7 @@ SCREEN_NESSI_DOLPHIN = 0x6e6c
 SCREEN_NESSI_OCTO = 0x4802
 SCREEN_NESSI_NARWHAL = 0x5996
 SCREEN_NESSI_SERPENT = 0x6b2a
-SCREEN_NESSI_SUNFISH = 0x6e0c
+SCREEN_NESSI_SHARK = 0x6e0c
 SCREEN_NESSI_WIN = 0x61f4
 SCREEN_NESSI_LOSE = 0x64c4
 SCREEN_NESSI_UPGRADE = 0x635c
@@ -109,7 +110,7 @@ ARRAY_SCREENS_NESSI = [
     SCREEN_NESSI_OCTO,
     SCREEN_NESSI_NARWHAL,
     SCREEN_NESSI_SERPENT,
-    SCREEN_NESSI_SUNFISH,
+    SCREEN_NESSI_SHARK,
     SCREEN_NESSI_WIN,
     SCREEN_NESSI_LOSE,
     SCREEN_NESSI_UPGRADE
@@ -142,7 +143,7 @@ ARRAY_SCREENS_NESSI_PLAY = [
     SCREEN_NESSI_OCTO,
     SCREEN_NESSI_NARWHAL,
     SCREEN_NESSI_SERPENT,
-    SCREEN_NESSI_SUNFISH,
+    SCREEN_NESSI_SHARK,
     SCREEN_NESSI_LOSE
 ]
 ARRAY_SCREENS_MUMMY_PLAY = [
@@ -588,7 +589,7 @@ function cheevo_won_intro()
     achievement(
         title = "One Small Step for Monster...",
         description = "Get called over by the bullies without falling back down to hell.",
-        points = 1,
+        points = 2,
         trigger = reset && start && trigger_when(goal),
         id = 649897,
         badge = "742535",
@@ -622,8 +623,8 @@ function cheevo_highscore(cheevo_name, game_name, user_name, init_score, highsco
     screen = get_curr_screen()
     score = get_curr_score()
     
-    // Reset when returning to the title screen.
-    reset = never(screen == title_screen)
+    // Reset when returning to the title screen or on the name entry screen.
+    reset = never(screen == title_screen || screen == SCREEN_NAME_ENTRY)
     
     // Start when transitioning from the title screen to the first gameplay screen
     // and the highscore is still at its initial value.
@@ -670,7 +671,7 @@ function cheevo_hell_angels()
 {
     screen = get_curr_screen()
     player_y = get_player_yposition()
-    cannot_move = is_player_movement_disabled()
+    cannot_move = get_pause_state() == 1
     
     // Y-position ranges for each angel.
     angel1 = is_between(player_y, 11228, 12500)
@@ -741,34 +742,177 @@ function cheevo_truck_tracks()
     )
 }
 
-function cheevo_no_repair()
+function cheevo_truck_no_repair()
 {
     screen = get_curr_screen()
     durability = get_truck_durability()
     score = get_curr_score()
     target_score = 1000
     
-    reset = never(durability > prev(durability) && screen == SCREEN_TRUCK_TITLE)
+    // Reset if durability increases or the player is on the game's title, game over, or name entry screens.
+    reset = never(durability > prev(durability) || (screen == SCREEN_TRUCK_TITLE ||
+        screen == SCREEN_GAME_OVER || screen == SCREEN_NAME_ENTRY))
     
+    // Start when the arcade game is first booted up.
     start = once(on_memory_change(screen, SCREEN_TRUCK_TITLE, SCREEN_TRUCK_DEST))
     
+    // Win the moment the score reaches the target score (or higher).
     goal = score >= target_score
     
     achievement(
         title = "On-Road Racer",
         description = "In \"Monster Truck Tour,\" reach 1000 points without repairing the truck.",
-        points = 25,
+        points = 10,
         trigger = reset && start && trigger_when(goal),
         id = 650244,
         badge = "742718"
     )
 }
 
+function cheevo_monster_enemies()
+{
+    screen = get_curr_screen()
+    
+    cyan_beat = on_memory_change(screen, SCREEN_MONSTER_CYAN, SCREEN_MONSTER_VICTORY)
+    magenta_beat = on_memory_change(screen, SCREEN_MONSTER_MAGENTA, SCREEN_MONSTER_VICTORY)
+    yellow_beat = on_memory_change(screen, SCREEN_MONSTER_YELLOW, SCREEN_MONSTER_VICTORY)
+    
+    // Reset when on the game's title, game over, or name entry screens.
+    reset = never(screen == SCREEN_MONSTER_TITLE || screen == SCREEN_GAME_OVER ||
+        screen == SCREEN_NAME_ENTRY
+    )
+    
+    // Start when switching from the title screen to the main gameplay screen.
+    start = once(on_memory_change(screen, SCREEN_MONSTER_TITLE, SCREEN_MONSTER_STAGE))
+    
+    // Win once all 3 monster have been defeated at least once.
+    goal = tally(
+        3,
+        once(cyan_beat),
+        once(magenta_beat),
+        once(yellow_beat)
+    )
+    
+    achievement(
+        title = "CMYKiller",
+        description = "In \"M.O.N.S.T.E.R.,\" defeat all 3 unique boss monsters in a single run.",
+        points = 10,
+        trigger = reset && start && measured(goal),
+        id = 650377,
+        badge = "742846"
+    )
+}
 
-// monster all enemies
-// monster fuel for seconds
-// nessi powerups
-// nessi 750 pts. no powerups
+function cheevo_monster_fuel()
+{
+    screen = get_curr_screen()
+    fuel = get_time_remain()
+    target_value = 150
+    fcount = get_frame_counter()
+    target_sec = 25 // target seconds * 60 frames
+    
+    // Reset if the screen is not the main stage screen or fuel falls below 150.
+    reset = never(screen != SCREEN_MONSTER_STAGE || fuel < target_value)
+    
+    // Win once the counter reaches the target time (and freeze the counter when paused).
+    goal = tally(
+        target_sec * 60,
+        prev(fcount) != fcount && get_pause_state() != 1
+    )
+
+    achievement(
+        title = "Fueled by Carbohydrates",
+        description = format("In \"M.O.N.S.T.E.R.,\" maintain a fuel level of at least {0} for {1} seconds while dodging meteors.",
+            target_value, target_sec),
+        points = 10,
+        trigger = reset && measured(goal, format = "percent"),
+        id = 650379,
+        badge = "742848"
+    )
+}
+
+function cheevo_nessi_powerups()
+{
+    screen = get_curr_screen()
+    lv_spd = get_nessi_spd_up()
+    lv_jump = get_nessi_jump_up()
+    lv_djump = get_nessi_djump_up()
+    
+    // Reset if on the arcade game's title, game over, or name entry screen
+    reset = never(screen == SCREEN_NESSI_TITLE || screen == SCREEN_GAME_OVER || screen == SCREEN_NAME_ENTRY)
+    
+    // Win once all 9 upgrades are purchased.
+    goal = tally(9,
+        repeated(4, prev(lv_spd) < lv_spd),
+        repeated(4, prev(lv_jump) < lv_jump),
+        repeated(1, prev(lv_djump) < lv_djump)
+    )
+    
+    achievement(
+        title = "Super Powered Up",
+        description = "In \"Nessi: Ocean Racer,\" fully upgrade Nessi.",
+        points = 5,
+        trigger = reset && measured(goal),
+        id = 650574,
+        badge = "742855"
+    )
+}
+
+function cheevo_nessi_no_powerups()
+{
+    screen = get_curr_screen()
+    lv_spd = get_nessi_spd_up()
+    lv_jump = get_nessi_jump_up()
+    lv_djump = get_nessi_djump_up()
+    lives = get_nessi_lives()
+    target_score = 1000
+    
+    // Reset if on the arcade game's title, game over, or name entry screens OR if lives increase OR
+    // any power-up are obtained.
+    reset = never(screen == SCREEN_NESSI_TITLE || screen == SCREEN_GAME_OVER || screen == SCREEN_NAME_ENTRY ||
+        lv_spd > 0 || lv_jump > 0 || lv_djump > 0 || prev(lives) < lives)
+        
+    start = once(on_memory_change(screen, SCREEN_NESSI_TITLE, SCREEN_NESSI_TURTLE))
+    
+    goal = get_curr_score() >= target_score
+    
+    achievement(
+        title = "Nimble Nessi",
+        description = format("In \"Nessi: Ocean Racer,\" earn a score of at least {0} points without upgrading or healing Nessi.",
+            target_score),
+        points = 10,
+        trigger = reset && start && trigger_when(goal),
+        id = 650575,
+        badge = "742856"
+    )
+}
+
+function cheevo_mummy_quick_kills()
+{
+    screen = get_curr_screen()
+    score = get_curr_score()
+    fcount = get_frame_counter()
+    adv_points = 20
+    target_sec = 5
+    
+    // Reset if not on the main game screen or the timer exceeds the target value (freeze during pause).
+    reset = never(screen != SCREEN_MUMMY_STAGE ||
+    (once(score == prev(score) + adv_points) &&
+        repeated(target_sec * 60 + 1, fcount != prev(fcount) && get_pause_state() != 1)))
+    
+    start = once(score == prev(score) + adv_points)
+    
+    goal = repeated(2, score == prev(score) + adv_points)
+    
+    achievement(
+        title = "Unrelenting Curse",
+        description = "In \"Curse of the Mummy,\" quickly defeat 2 adventurers within 5 seconds of each other.",
+        points = 5,
+        trigger = reset && start && trigger_when(goal),
+        id = 650576,
+        badge = "742857"
+    )
+}
 
 function cheevo_mummy_ankhs()
 {
@@ -784,14 +928,12 @@ function cheevo_mummy_ankhs()
     achievement(
         title = "Second Life",
         description = "In \"Curse of the Mummy,\" collect 2 ankhs in a single run.",
-        points = 10,
+        points = 5,
         trigger = reset && measured(goal),
         id = 649906,
         badge = "742542"
     )
 }
-
-// mummy quick kills
 
 function cheevo_ending_ascend()
 {
@@ -819,7 +961,7 @@ function cheevo_ending_revive()
     achievement
     (
         title = "Tauriphena's Blessing",
-        description = "Be brought back and live to game another day",
+        description = "Be brought back and live to game another day.",
         points = 5,
         trigger = goal,
         type = "win_condition",
@@ -880,9 +1022,11 @@ function cheevo_tokipon_collected(start_id, cheevo_name, rarity, points_awarded,
 }
 
 //-- Declarations --
+// Missables
 cheevo_won_intro()
 cheevo_befriend_violeta()
 
+// Escape Hell
 cheevo_highscore("Heaven or Hell", "Escape Hell", "Violeta", 666,
     get_hell_highscore(), SCREEN_HELL_TITLE, SCREEN_HELL_STAGE,
     650240, "742714"
@@ -890,49 +1034,114 @@ cheevo_highscore("Heaven or Hell", "Escape Hell", "Violeta", 666,
 cheevo_hell_heaven()
 cheevo_hell_angels()
 
+// Monster Truck Tour
 cheevo_highscore("Take That, Bully!", "Monster Truck Tour", "Jerry", 712,
     get_truck_highscore(), SCREEN_TRUCK_TITLE, SCREEN_TRUCK_DEST,
     650239, "742713"
 )
 cheevo_truck_tracks()
-cheevo_no_repair()
+cheevo_truck_no_repair()
 
+// M.O.N.S.T.E.R.
 cheevo_highscore("Big Bully Beatdown", "M.O.N.S.T.E.R.", "Dustin", 681,
     get_monster_highscore(), SCREEN_MONSTER_TITLE, SCREEN_MONSTER_STAGE,
     650241, "742715"
 )
+cheevo_monster_enemies()
+cheevo_monster_fuel()
 
+// Nessi: Ocean Racer
 cheevo_highscore("Friend of Dorrie", "Nessi: Ocean Racer", "Tim", 435,
     get_nessi_highscore(), SCREEN_NESSI_TITLE, SCREEN_NESSI_TURTLE,
     650243, "742717"
 )
+cheevo_nessi_powerups()
+cheevo_nessi_no_powerups()
 
+// Curse of the Mummy
 cheevo_highscore("Immortalized", "Curse of the Mummy", "Mr. G", 493,
     get_mummy_highscore(), SCREEN_MUMMY_TITLE, SCREEN_MUMMY_STAGE,
     650242, "742716"
 )
+cheevo_mummy_quick_kills()
 cheevo_mummy_ankhs()
 
 cheevo_ending_ascend()
 cheevo_ending_revive()
 
-cheevo_tokipon_collected(1, "Common Collector", "common", 5, 649901, "742537")
-cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 10, 649902, "742538")
-cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 25, 649903, "742539")
-cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 50, 649904, "742540")
+cheevo_tokipon_collected(1, "Common Collector", "common", 3, 649901, "742537")
+cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 5, 649902, "742538")
+cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 10, 649903, "742539")
+cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 25, 649904, "742540")
 
 //----- Leaderboards -----
+//-- Functions --
+function lb_speedrun()
+{
+    screen = get_curr_screen()
+    
+    // Reset if the player ever returns to the title menus.
+    reset = screen == SCREEN_BOOT || screen == SCREEN_INTRO_CARD ||
+        screen == SCREEN_TITLE || screen == SCREEN_MAIN_MENU
+    
+    // Start when beginning a new game.
+    begin = on_memory_change(screen, SCREEN_MAIN_MENU, SCREEN_HELL_STAGE)
+    
+    // Submit upon reaching the credits.
+    goal = (prev(screen) == SCREEN_ENDING || prev(screen) == SCREEN_CONVO_MONSTER_TAURIPHENA) &&
+        screen == SCREEN_CREDITS_1
+    
+    leaderboard(
+        title = "Afterlife Speedrun",
+        description = "In a single session, clear from a new game as fast as possible.",
+        start = begin, cancel = reset, submit = goal,
+        value = always_true(), format = "FRAMES", lower_is_better = true,
+        id = 176763
+    )
+}
 
+function lb_highscore(game_name, title_screen, first_screen, lb_id = 0)
+{
+    screen = get_curr_screen()
+    score = get_curr_score()
+    
+    // Reset on the game's title and name entry screens.
+    reset = screen == title_screen || screen == SCREEN_NAME_ENTRY
+    
+    // Start once the game begins.
+    begin = once(on_memory_change(screen, title_screen, first_screen))
+    
+    // Submit on game over.
+    goal = screen == SCREEN_GAME_OVER
+    
+    leaderboard(
+        title = format("{0} - Highscore", game_name),
+        description = format("Highest score achieved in {0}.", game_name),
+        start = begin, cancel = reset, submit = goal,
+        value = get_curr_score(), format = "VALUE", lower_is_better = false,
+        id = lb_id
+    )
+}
+
+//-- Declarations --
+lb_speedrun()
+
+lb_highscore("Escape Hell", SCREEN_HELL_TITLE, SCREEN_HELL_STAGE, 176764)
+lb_highscore("Monster Truck Tour", SCREEN_TRUCK_TITLE, SCREEN_TRUCK_DEST, 176765)
+lb_highscore("M.O.N.S.T.E.R", SCREEN_MONSTER_TITLE, SCREEN_MONSTER_STAGE, 176766)
+lb_highscore("Nessi: Ocean Racer", SCREEN_NESSI_TITLE, SCREEN_NESSI_TURTLE, 176767)
+lb_highscore("Curse of the Mummy", SCREEN_MUMMY_TITLE, SCREEN_MUMMY_STAGE, 176768)
 
 //----- Rich Presence -----
 //-- Lookups --
 mkid_str = "monster kid"
-main_menu_str = "haunting the main menu."
-bullied_str = "being picked on by the bullies."
-toki_str = "checking out his awesome Tokipon collection!"
-credits_str = "viewing the credits. Thank you for playing!"
+main_menu_str = "is haunting the main menu."
+bullied_str = "is being picked on by the bullies."
+toki_str = "is checking out his awesome Tokipon collection!"
+credits_str = "is viewing the credits. Thanks for playing!"
 
 lookup_screen_mkid = {
+    SCREEN_MAIN_MENU: mkid_str, // This one only displays if it was the previous screen.
     SCREEN_DEATH: mkid_str,
     SCREEN_CONVO_MONSTER_BULLIES: mkid_str,
     SCREEN_ARCADE_INTRO_1: mkid_str,
@@ -943,10 +1152,6 @@ lookup_screen_mkid = {
     SCREEN_CREDITS_4: mkid_str,
     SCREEN_CREDITS_5: mkid_str,
     SCREEN_CREDITS_6: mkid_str
-}
-
-lookup_screen_game = {
-
 }
 
 lookup_screen_text = {
@@ -961,11 +1166,49 @@ lookup_screen_text = {
     
     SCREEN_HELL_TITLE: "ESCAPE HELL",
     SCREEN_TRUCK_TITLE: "MONSTER TRUCK TOUR",
-    SCREEN_MONSTER_TITLE: "M.O.N.S.T.E.R.",
+    SCREEN_MONSTER_TITLE: "M.O.N.S.T.E.R", // A period will follow the text, so the last one isn't needed here.
     SCREEN_NESSI_TITLE: "NESSI: OCEAN RACER",
     SCREEN_MUMMY_TITLE: "CURSE OF THE MUMMY",
     
-    SCREEN_ENDING: "ascending…",
+    SCREEN_HELL_STAGE: "is helping a demon ESCAPE HELL",
+    SCREEN_HELL_HEAVEN: "has helped another demon ESCAPE HELL",
+    
+    SCREEN_TRUCK_DEST: "Choosing a destination…",
+    SCREEN_TRUCK_REPAIR: "Choosing a destination…",
+    SCREEN_TRUCK_BEACH_CARD: "Skyline Beach",
+    SCREEN_TRUCK_BEACH_STAGE: "Skyline Beach",
+    SCREEN_TRUCK_WINDY_CARD: "Windy Meadows",
+    SCREEN_TRUCK_WINDY_STAGE: "Windy Meadows",
+    SCREEN_TRUCK_ICE_CARD: "Frozen Fields",
+    SCREEN_TRUCK_ICE_STAGE: "Frozen Fields",
+    SCREEN_TRUCK_NIGHT_CARD: "Lights of the Night",
+    SCREEN_TRUCK_NIGHT_STAGE: "Lights of the Night",
+    SCREEN_TRUCK_SANDS_CARD: "Endless Sands",
+    SCREEN_TRUCK_SANDS_STAGE: "Endless Sands",
+    SCREEN_TRUCK_LAVA_CARD: "Lava Lake",
+    SCREEN_TRUCK_LAVA_STAGE: "Lava Lake",
+    
+    SCREEN_MONSTER_STAGE: "through space.",
+    SCREEN_MONSTER_WARN: "and approaching and enemy!",
+    SCREEN_MONSTER_VICTORY: "and defeating an enemy!",
+    SCREEN_MONSTER_CYAN: "while battling the cyan monster.",
+    SCREEN_MONSTER_MAGENTA: "while battling the magenta monster.",
+    SCREEN_MONSTER_YELLOW: "while battling the yellow monster.",
+    
+    SCREEN_NESSI_TURTLE: "rooting for NESSI: OCEAN RACER against a turtle!",
+    SCREEN_NESSI_DOLPHIN: "rooting for NESSI: OCEAN RACER against a dolphin!",
+    SCREEN_NESSI_OCTO: "rooting for NESSI: OCEAN RACER against a octopus!",
+    SCREEN_NESSI_NARWHAL: "rooting for NESSI: OCEAN RACER against a narwhal!",
+    SCREEN_NESSI_SERPENT: "rooting for NESSI: OCEAN RACER against a sea serpent!",
+    SCREEN_NESSI_SHARK: "rooting for NESSI: OCEAN RACER against a shark!",
+    SCREEN_NESSI_WIN: "celebrating with NESSI: OCEAN RACER!",
+    SCREEN_NESSI_LOSE: "consoling NESSI: OCEAN RACER…",
+    SCREEN_NESSI_UPGRADE: "upgrading NESSI: OCEAN RACER.",
+    
+    SCREEN_GAME_OVER: "has gotten a game over.",
+    SCREEN_NAME_ENTRY: "has gotten a new highscore!",
+    
+    SCREEN_ENDING: "is ascending…",
     SCREEN_CONVO_MONSTER_TAURIPHENA: "has been brought back to life!",
     
     SCREEN_CREDITS_1: credits_str,
@@ -978,7 +1221,13 @@ lookup_screen_text = {
     SCREEN_TOKIPON_C: toki_str,
     SCREEN_TOKIPON_U: toki_str,
     SCREEN_TOKIPON_R: toki_str,
-    SCREEN_TOKIPON_SR: toki_str
+    SCREEN_TOKIPON_SR: toki_str,
+    SCREEN_TOKIPON_MACHINE: "is rolling the gacha!"
+}
+
+lookup_unlocked_symbol = {
+    0: "❌",
+    1: "✔"
 }
 
 //-- Function & Declaration --
@@ -986,12 +1235,78 @@ function rp()
 {
     screen = get_curr_screen()
     
+    // Arcade Game Title Screens
     rich_presence_conditional_display(
         screen == SCREEN_HELL_TITLE || screen == SCREEN_TRUCK_TITLE ||
         screen == SCREEN_MONSTER_TITLE || screen == SCREEN_NESSI_TITLE ||
         screen == SCREEN_MUMMY_TITLE,
         "The ghost is on the title screen of {0}.",
-        rich_presence_lookup("GameTitle", screen, lookup_screen_text)
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text)
+    )
+    
+    // Escape Hell
+    rich_presence_conditional_display(
+        screen == SCREEN_HELL_STAGE || screen == SCREEN_HELL_HEAVEN,
+        "The {0} {1}. • 🎯 {2} (🥇 {3})",
+        rich_presence_lookup("MKid", prior(screen), lookup_screen_mkid, "ghost"),
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text),
+        rich_presence_macro("Number", get_curr_score()),
+        rich_presence_macro("Number", get_hell_highscore())
+    )
+    
+    // Monster Truck Tour
+    rich_presence_conditional_display(
+        screen == SCREEN_TRUCK_DEST || screen == SCREEN_TRUCK_REPAIR ||
+        screen == SCREEN_TRUCK_BEACH_CARD || screen == SCREEN_TRUCK_BEACH_STAGE ||
+        screen == SCREEN_TRUCK_WINDY_CARD || screen == SCREEN_TRUCK_WINDY_STAGE ||
+        screen == SCREEN_TRUCK_ICE_CARD || screen == SCREEN_TRUCK_ICE_STAGE ||
+        screen == SCREEN_TRUCK_NIGHT_CARD || screen == SCREEN_TRUCK_NIGHT_STAGE ||
+        screen == SCREEN_TRUCK_SANDS_CARD || screen == SCREEN_TRUCK_SANDS_STAGE ||
+        screen == SCREEN_TRUCK_LAVA_CARD || screen == SCREEN_TRUCK_LAVA_STAGE,
+        "The ghost is driving in a MONSTER TRUCK TOUR. • 🛣️ {0} • 🎯 {1} (🥇 {2}) • 🔧 {3}%",
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text),
+        rich_presence_macro("Number", get_curr_score()),
+        rich_presence_macro("Number", get_truck_highscore()),
+        rich_presence_macro("Number", get_truck_durability())
+    )
+    
+    // M.O.N.S.T.E.R.
+    rich_presence_conditional_display(
+        screen == SCREEN_MONSTER_STAGE || screen == SCREEN_MONSTER_WARN ||
+        screen == SCREEN_MONSTER_VICTORY || screen == SCREEN_MONSTER_CYAN ||
+        screen == SCREEN_MONSTER_MAGENTA || screen == SCREEN_MONSTER_YELLOW,
+        "The ghost is flying a M.O.N.S.T.E.R. ship {0} • 🎯 {1} (🥇 {2}) • 🔥 {3}%",
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text),
+        rich_presence_macro("Number", get_curr_score()),
+        rich_presence_macro("Number", get_monster_highscore()),
+        rich_presence_macro("Number", get_time_remain())
+    )
+    
+    // Nessi: Ocean Racer
+    rich_presence_conditional_display(
+        screen == SCREEN_NESSI_TURTLE || screen == SCREEN_NESSI_DOLPHIN ||
+        screen == SCREEN_NESSI_OCTO || screen == SCREEN_NESSI_NARWHAL ||
+        screen == SCREEN_NESSI_SERPENT || screen == SCREEN_NESSI_SHARK ||
+        screen == SCREEN_NESSI_WIN || screen == SCREEN_NESSI_LOSE ||
+        screen == SCREEN_NESSI_UPGRADE,
+        "The ghost is {0} • 🎯 {1} (🥇 {2}) • 🐋 {3} • ⏩ +{4} • 🔼 +{5} • ⏫ {6}",
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text),
+        rich_presence_macro("Number", get_curr_score()),
+        rich_presence_macro("Number", get_nessi_highscore()),
+        rich_presence_macro("Number", get_nessi_lives()),
+        rich_presence_macro("Number", get_nessi_spd_up()),
+        rich_presence_macro("Number", get_nessi_jump_up()),
+        rich_presence_lookup("Unlock", get_nessi_djump_up(), lookup_unlocked_symbol)
+        
+    )
+    
+    // Curse of the Mummy
+    rich_presence_conditional_display(
+        screen == SCREEN_MUMMY_STAGE,
+        "The ghost is unleashing the CURSE OF THE MUMMY on foolish adventurers. • 🎯 {0} (🥇 {1}) • ⌛︎ {2}",
+        rich_presence_macro("Number", get_curr_score()),
+        rich_presence_macro("Number", get_mummy_highscore()),
+        rich_presence_macro("Number", get_time_remain())
     )
     
     // Main Menu
@@ -1003,9 +1318,9 @@ function rp()
     
     // Default - Intro, arcade overworld, most convos, pause menu, Tokipon collection,
     //           Tokipon machine
-    rich_presence_display("The {0} is {1} • 🏆 {2}/5 • 🎟️{3} • 🦖 {4}/32",
-        rich_presence_lookup("Form", screen, lookup_screen_mkid, "ghost"),
-        rich_presence_lookup("Descriptor", screen, lookup_screen_text, "haunting the arcade."),
+    rich_presence_display("The {0} {1} • 🏆 {2}/5 • 🎟️{3} • 🦖 {4}/32",
+        rich_presence_lookup("MKid", screen, lookup_screen_mkid, "ghost"),
+        rich_presence_lookup("ScrnTxt", screen, lookup_screen_text, "is haunting the arcade."),
         rich_presence_macro("Number", get_highscores_beaten()),
         rich_presence_macro("Number", get_tickets()),
         rich_presence_macro("Number", get_tokipon_obtained_unique())
