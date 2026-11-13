@@ -584,7 +584,8 @@ function cheevo_won_intro()
     
     // Win when you cannot move and are above the specified height.
     // This is when you get called over by the bullies.
-    goal = cannot_move && player_y < 13788
+    // Lower y values are higher up.
+    goal = cannot_move && player_y < min_height
     
     achievement(
         title = "One Small Step for Monster...",
@@ -648,13 +649,18 @@ function cheevo_highscore(cheevo_name, game_name, user_name, init_score, highsco
 }
 
 function cheevo_hell_heaven()
-{
+{    
     screen = get_curr_screen()
-    
+    score = get_curr_score()
+       
     // Reset when not on the stage or heaven screens.
     reset = never(screen != SCREEN_HELL_STAGE && screen != SCREEN_HELL_HEAVEN)
     
-    goal = tally(5, on_memory_change(screen, SCREEN_HELL_STAGE, SCREEN_HELL_HEAVEN))
+    // Check for screen change and that 100 points were awarded.
+    goal = tally(5,
+        score == prior(score) + 100 &&
+        on_memory_change(screen, SCREEN_HELL_STAGE, SCREEN_HELL_HEAVEN)
+    )
     
     achievement(
         title = "Heaven and Heaven",
@@ -671,7 +677,7 @@ function cheevo_hell_angels()
 {
     screen = get_curr_screen()
     player_y = get_player_yposition()
-    cannot_move = get_pause_state() == 1
+    cannot_move = on_memory_change(get_pause_state(), 0x19, 0x01)
     
     // Y-position ranges for each angel.
     angel1 = is_between(player_y, 11228, 12500)
@@ -772,13 +778,17 @@ function cheevo_truck_no_repair()
 function cheevo_monster_enemies()
 {
     screen = get_curr_screen()
+    score = get_curr_score()
     
-    cyan_beat = on_memory_change(screen, SCREEN_MONSTER_CYAN, SCREEN_MONSTER_VICTORY)
-    magenta_beat = on_memory_change(screen, SCREEN_MONSTER_MAGENTA, SCREEN_MONSTER_VICTORY)
-    yellow_beat = on_memory_change(screen, SCREEN_MONSTER_YELLOW, SCREEN_MONSTER_VICTORY)
+    // Score increases after the screen changes.
+    score_up = score == prev(score) + 50
+    cyan_beat = prior(screen) == SCREEN_MONSTER_CYAN && screen == SCREEN_MONSTER_VICTORY
+    magenta_beat = prior(screen) == SCREEN_MONSTER_MAGENTA && screen == SCREEN_MONSTER_VICTORY
+    yellow_beat = prior(screen) == SCREEN_MONSTER_YELLOW && screen == SCREEN_MONSTER_VICTORY
     
     // Reset when on the game's title, game over, or name entry screens.
-    reset = never(screen == SCREEN_MONSTER_TITLE || screen == SCREEN_GAME_OVER ||
+    reset = never(
+        screen == SCREEN_MONSTER_TITLE || screen == SCREEN_GAME_OVER ||
         screen == SCREEN_NAME_ENTRY
     )
     
@@ -788,9 +798,9 @@ function cheevo_monster_enemies()
     // Win once all 3 monster have been defeated at least once.
     goal = tally(
         3,
-        once(cyan_beat),
-        once(magenta_beat),
-        once(yellow_beat)
+        once(cyan_beat && score_up),
+        once(magenta_beat && score_up),
+        once(yellow_beat && score_up)
     )
     
     achievement(
@@ -939,7 +949,8 @@ function cheevo_ending_ascend()
 {
     screen = get_curr_screen()
     
-    goal = on_memory_change(screen, SCREEN_ENDING, SCREEN_CREDITS_1)
+    goal = get_player_control_state() == 0x12 &&
+        on_memory_change(screen, SCREEN_ENDING, SCREEN_CREDITS_1)
     
     achievement(
         title = "Great Gaming Beyond",
@@ -956,7 +967,8 @@ function cheevo_ending_revive()
 {
     screen = get_curr_screen()
     
-    goal = on_memory_change(screen, SCREEN_CONVO_MONSTER_TAURIPHENA, SCREEN_CREDITS_1)
+    goal = get_player_control_state() == 0x12 &&
+        on_memory_change(screen, SCREEN_CONVO_MONSTER_TAURIPHENA, SCREEN_CREDITS_1)
     
     achievement
     (
@@ -1070,7 +1082,7 @@ cheevo_ending_ascend()
 cheevo_ending_revive()
 
 cheevo_tokipon_collected(1, "Common Collector", "common", 3, 649901, "742537")
-cheevo_tokipon_collected(9, "Un-commonality", "uncommon", 5, 649902, "742538")
+cheevo_tokipon_collected(9, "Un-Commonality", "uncommon", 5, 649902, "742538")
 cheevo_tokipon_collected(17, "How I Like My Steak", "rare", 10, 649903, "742539")
 cheevo_tokipon_collected(25, "Not So Secret Now", "secret rare", 25, 649904, "742540")
 
